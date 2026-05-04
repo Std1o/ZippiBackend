@@ -1,26 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
-  <component name="AutoImportSettings">
-    <option name="autoReloadType" value="SELECTIVE" />
-  </component>
   <component name="ChangeListManager">
-    <list default="true" id="ae3e6cdc-4944-4071-9228-6c2f4616b08e" name="Changes" comment="" />
+    <list default="true" id="f1688dad-2bea-466b-929b-183507702018" name="Changes" comment="" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
-  <component name="FileTemplateManagerImpl">
-    <option name="RECENT_TEMPLATES">
-      <list>
-        <option value="Python Script" />
-      </list>
-    </option>
-  </component>
   <component name="ProjectColorInfo"><![CDATA[{
-  "associatedIndex": 6
+  "associatedIndex": 7
 }]]></component>
-  <component name="ProjectId" id="3DGUEYmbRU4SyyfaP4hO3xBHlaO" />
+  <component name="ProjectId" id="3DGVpetRxEPD1364miC7pGTPSje" />
   <component name="ProjectViewState">
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
@@ -29,21 +19,17 @@
   "keyToString": {
     "Python.zippi.executor": "Run",
     "RunOnceActivity.ShowReadmeOnStart": "true",
-    "last_opened_file_path": "/Users/mac/Desktop/Zippi/zippi"
+    "last_opened_file_path": "/Users/mac/Desktop/ZippiBackend"
   }
 }]]></component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
-      <recent name="$PROJECT_DIR$/zippi" />
-      <recent name="$PROJECT_DIR$/zippi/service" />
-      <recent name="$PROJECT_DIR$/zippi/model" />
-      <recent name="$PROJECT_DIR$/zippi/api" />
       <recent name="$PROJECT_DIR$" />
     </key>
   </component>
   <component name="RunManager">
     <configuration name="zippi" type="PythonConfigurationType" factoryName="Python" nameIsGenerated="true">
-      <module name="Zippi" />
+      <module name="ZippiBackend" />
       <option name="ENV_FILES" value="" />
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
@@ -51,7 +37,7 @@
         <env name="PYTHONUNBUFFERED" value="1" />
       </envs>
       <option name="SDK_HOME" value="" />
-      <option name="SDK_NAME" value="Python 3.11 (Zippi)" />
+      <option name="SDK_NAME" value="Python 3.11 (ZippiBackend)" />
       <option name="WORKING_DIRECTORY" value="" />
       <option name="IS_MODULE_SDK" value="false" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
@@ -76,11 +62,11 @@
   <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
   <component name="TaskManager">
     <task active="true" id="Default" summary="Default task">
-      <changelist id="ae3e6cdc-4944-4071-9228-6c2f4616b08e" name="Changes" comment="" />
-      <created>1777907789020</created>
+      <changelist id="f1688dad-2bea-466b-929b-183507702018" name="Changes" comment="" />
+      <created>1777908577581</created>
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
-      <updated>1777907789020</updated>
+      <updated>1777908577581</updated>
     </task>
     <servers />
   </component>
