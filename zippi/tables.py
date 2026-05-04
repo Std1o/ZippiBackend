@@ -1,7 +1,8 @@
 from datetime import datetime
+import json
 
 import sqlalchemy as sa
-from sqlalchemy import ForeignKey
+from sqlalchemy import Float, ForeignKey, Text, Boolean, Integer, String
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 
@@ -14,22 +15,76 @@ class User(Base):
     phone = sa.Column(sa.Text, unique=True, nullable=False)
     username = sa.Column(sa.Text)
     password_hash = sa.Column(sa.Text)
-    is_courier = sa.Column(sa.Boolean, default=True)
+    is_courier = sa.Column(sa.Boolean, default=False)
+    is_admin = sa.Column(sa.Boolean, default=False)
+
+
+class Category(Base):
+    __tablename__ = 'categories'
+    id = sa.Column(sa.Integer, primary_key=True)
+    name = sa.Column(sa.String(100), nullable=False)
+    description = sa.Column(sa.Text)
+    image_url = sa.Column(sa.String(500))
+    sort_order = sa.Column(sa.Integer, default=0)
+    is_active = sa.Column(sa.Boolean, default=True)
+
+    products = relationship("Product", back_populates="category")
+
+
+class Product(Base):
+    __tablename__ = 'products'
+    id = sa.Column(sa.Integer, primary_key=True)
+    name = sa.Column(sa.String(200), nullable=False)
+    description = sa.Column(sa.Text)
+    price = sa.Column(sa.Float, nullable=False)
+    old_price = sa.Column(sa.Float)
+    image_url = sa.Column(sa.String(500))
+    category_id = sa.Column(sa.Integer, ForeignKey('categories.id'))
+    stock = sa.Column(sa.Integer, default=0)
+    is_active = sa.Column(sa.Boolean, default=True)
+    created_at = sa.Column(sa.DateTime, default=datetime.utcnow)
+
+    category = relationship("Category", back_populates="products")
+
+
+class Cart(Base):
+    __tablename__ = 'carts'
+    id = sa.Column(sa.Integer, primary_key=True)
+    user_id = sa.Column(sa.Integer, ForeignKey('users.id'), nullable=False)
+    created_at = sa.Column(sa.DateTime, default=datetime.utcnow)
+    updated_at = sa.Column(sa.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    user = relationship("User", backref="cart")
+    items = relationship("CartItem", back_populates="cart", cascade="all, delete-orphan")
+
+
+class CartItem(Base):
+    __tablename__ = 'cart_items'
+    id = sa.Column(sa.Integer, primary_key=True)
+    cart_id = sa.Column(sa.Integer, ForeignKey('carts.id'), nullable=False)
+    product_id = sa.Column(sa.Integer, ForeignKey('products.id'), nullable=False)
+    quantity = sa.Column(sa.Integer, default=1)
+    created_at = sa.Column(sa.DateTime, default=datetime.utcnow)
+
+    cart = relationship("Cart", back_populates="items")
+    product = relationship("Product")
 
 
 class Order(Base):
     __tablename__ = 'orders'
     id = sa.Column(sa.Integer, primary_key=True)
-    order_number = sa.Column(sa.String(6), unique=True, nullable=False)  # 6 цифр
-    pickup_code = sa.Column(sa.String(4), nullable=False)  # 4 цифры для получения в магазине
-    delivery_code = sa.Column(sa.String(4), nullable=False)  # 4 цифры для подтверждения доставки
+    order_number = sa.Column(sa.String(6), unique=True, nullable=False)
+    pickup_code = sa.Column(sa.String(4), nullable=False)
+    delivery_code = sa.Column(sa.String(4), nullable=False)
 
-    # Адрес магазина
+    user_id = sa.Column(sa.Integer, ForeignKey('users.id'), nullable=False)  # клиент
+    courier_id = sa.Column(sa.Integer, ForeignKey('users.id'), nullable=True)
+
+    # Адреса
     store_address = sa.Column(sa.String(500), nullable=False)
     store_latitude = sa.Column(sa.Float)
     store_longitude = sa.Column(sa.Float)
 
-    # Адрес клиента
     customer_address = sa.Column(sa.String(500), nullable=False)
     customer_latitude = sa.Column(sa.Float)
     customer_longitude = sa.Column(sa.Float)
@@ -37,11 +92,11 @@ class Order(Base):
     customer_name = sa.Column(sa.String(200))
 
     # Информация о заказе
-    items = sa.Column(sa.Text, nullable=False)  # JSON строка со списком товаров
+    items = sa.Column(sa.Text, nullable=False)  # JSON
     total_amount = sa.Column(sa.Float)
 
-    # Статусы заказа
-    status = sa.Column(sa.String(50), default='pending')  # pending, ready, picked_up, delivered, cancelled
+    # Статусы
+    status = sa.Column(sa.String(50), default='pending')
     is_active = sa.Column(sa.Boolean, default=True)
 
     # Временные метки
@@ -50,9 +105,8 @@ class Order(Base):
     picked_up_at = sa.Column(sa.DateTime)
     delivered_at = sa.Column(sa.DateTime)
 
-    # Связи
-    courier_id = sa.Column(sa.Integer, ForeignKey('users.id'), nullable=True)
-    courier = relationship("User", backref="orders", foreign_keys=[courier_id])
+    user = relationship("User", foreign_keys=[user_id])
+    courier = relationship("User", foreign_keys=[courier_id])
 
 
 class Shift(Base):
@@ -64,7 +118,7 @@ class Shift(Base):
     duration_hours = sa.Column(sa.Integer)
     is_active = sa.Column(sa.Boolean, default=True)
 
-    courier = relationship("User", backref="shifts")
+    courier = relationship("User", backref="shifts", foreign_keys=[courier_id])
 
 
 class DeliveryHistory(Base):
@@ -76,4 +130,4 @@ class DeliveryHistory(Base):
     delivery_time = sa.Column(sa.DateTime, default=datetime.utcnow)
 
     order = relationship("Order")
-    courier = relationship("User")
+    courier = relationship("User", foreign_keys=[courier_id])
