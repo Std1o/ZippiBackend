@@ -81,14 +81,9 @@ class Order(Base):
     user_id = sa.Column(sa.Integer, ForeignKey('users.id'), nullable=False)  # клиент
     courier_id = sa.Column(sa.Integer, ForeignKey('users.id'), nullable=True)  # курьер
 
-    # Адреса
+    # Адреса (только текст)
     store_address = sa.Column(sa.String(500), nullable=False)
-    store_latitude = sa.Column(sa.Float)
-    store_longitude = sa.Column(sa.Float)
-
     customer_address = sa.Column(sa.String(500), nullable=False)
-    customer_latitude = sa.Column(sa.Float)
-    customer_longitude = sa.Column(sa.Float)
     customer_phone = sa.Column(sa.String(20), nullable=False)
     customer_name = sa.Column(sa.String(200))
 

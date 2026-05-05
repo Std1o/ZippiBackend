@@ -11,19 +11,6 @@ class OrderItem(BaseModel):
     total: float
 
 
-class OrderCreate(BaseModel):
-    store_address: str
-    customer_address: str
-    customer_phone: str
-    customer_name: str
-    items: List[dict]
-    total_amount: float
-    store_latitude: Optional[float] = None
-    store_longitude: Optional[float] = None
-    customer_latitude: Optional[float] = None
-    customer_longitude: Optional[float] = None
-
-
 class OrderResponse(BaseModel):
     id: int
     order_number: str
@@ -53,7 +40,6 @@ class OrderCard(BaseModel):
     store_address: str
     customer_address: str
     status: str
-    distance: Optional[float] = None
 
 
 class PickupConfirm(BaseModel):

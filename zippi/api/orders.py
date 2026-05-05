@@ -1,5 +1,5 @@
 from typing import List, Optional
-from fastapi import APIRouter, Depends, Query, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 
 from ..model.auth import User
 from ..model.orders import OrderResponse, OrderCard, PickupConfirm, DeliveryConfirm
@@ -11,12 +11,10 @@ router = APIRouter(prefix='/orders', tags=['Заказы'])
 
 @router.get('/available', response_model=List[OrderCard])
 def get_available_orders(
-    lat: Optional[float] = Query(None, description="Широта курьера"),
-    lon: Optional[float] = Query(None, description="Долгота курьера"),
     service: OrderService = Depends()
 ):
-    """Список доступных заказов для курьеров (с сортировкой по расстоянию)"""
-    return service.get_available_orders(lat, lon)
+    """Список доступных заказов для курьеров"""
+    return service.get_available_orders()
 
 
 @router.post('/take/{order_id}', response_model=OrderResponse)
@@ -52,7 +50,7 @@ def confirm_delivery(
 @router.put('/status/{order_number}', response_model=OrderResponse)
 def update_order_status(
     order_number: str,
-    status: str = Query(..., description="Новый статус (ready или cancelled)"),
+    status: str,
     service: OrderService = Depends()
 ):
     """Обновление статуса заказа (для магазина/админа)"""

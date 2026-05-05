@@ -1,14 +1,13 @@
 import random
 import json
 from datetime import datetime
-from math import radians, sin, cos, sqrt, atan2
 from typing import List, Optional
 
 from fastapi import HTTPException, Depends
 from sqlalchemy.orm import Session
 
 from ..database import get_session
-from ..model.orders import OrderResponse, OrderCard, OrderItem
+from ..model.orders import OrderResponse, OrderCard
 from .. import tables
 
 
@@ -27,16 +26,6 @@ class OrderService:
         """Генерация 4-значного кода"""
         return f"{random.randint(1000, 9999)}"
 
-    def calculate_distance(self, lat1: float, lon1: float, lat2: float, lon2: float) -> float:
-        """Расчет расстояния между двумя точками (в километрах)"""
-        R = 6371
-        lat1, lon1, lat2, lon2 = map(radians, [lat1, lon1, lat2, lon2])
-        dlat = lat2 - lat1
-        dlon = lon2 - lon1
-        a = sin(dlat / 2) ** 2 + cos(lat1) * cos(lat2) * sin(dlon / 2) ** 2
-        c = 2 * atan2(sqrt(a), sqrt(1 - a))
-        return round(R * c, 2)
-
     def create_order(self, user_id: int, order_data: dict) -> OrderResponse:
         """Создание нового заказа из корзины"""
         order_number = self.generate_order_number()
@@ -49,11 +38,7 @@ class OrderService:
             delivery_code=delivery_code,
             user_id=user_id,
             store_address=order_data.get('store_address', 'Магазин одежды, ул. Центральная, 1'),
-            store_latitude=order_data.get('store_latitude'),
-            store_longitude=order_data.get('store_longitude'),
             customer_address=order_data['customer_address'],
-            customer_latitude=order_data.get('customer_latitude'),
-            customer_longitude=order_data.get('customer_longitude'),
             customer_phone=order_data['customer_phone'],
             customer_name=order_data['customer_name'],
             items=json.dumps(order_data['items']),
@@ -91,35 +76,24 @@ class OrderService:
             courier_id=order.courier_id
         )
 
-    def get_available_orders(self, courier_lat: Optional[float] = None, courier_lon: Optional[float] = None) -> List[
-        OrderCard]:
-        """Получение списка доступных заказов для курьеров"""
+    def get_available_orders(self) -> List[OrderCard]:
+        """Получение списка доступных заказов для курьеров (без сортировки по расстоянию)"""
         orders = self.session.query(tables.Order).filter(
             tables.Order.status.in_(['pending', 'ready']),
             tables.Order.is_active == True,
             tables.Order.courier_id.is_(None)
-        ).all()
+        ).order_by(tables.Order.created_at.asc()).all()
 
         result = []
         for order in orders:
-            distance = None
-            if courier_lat and courier_lon and order.store_latitude and order.store_longitude:
-                distance = self.calculate_distance(
-                    courier_lat, courier_lon,
-                    order.store_latitude, order.store_longitude
-                )
-
             result.append(OrderCard(
                 id=order.id,
                 order_number=order.order_number,
                 store_address=order.store_address,
                 customer_address=order.customer_address,
-                status=order.status,
-                distance=distance
+                status=order.status
             ))
 
-        # Сортировка по расстоянию (ближе - выше)
-        result.sort(key=lambda x: x.distance if x.distance is not None else float('inf'))
         return result
 
     def take_order(self, order_id: int, courier_id: int) -> OrderResponse:

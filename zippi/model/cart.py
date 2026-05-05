@@ -39,8 +39,6 @@ class CheckoutRequest(BaseModel):
     customer_name: str
     customer_phone: str
     customer_address: str
-    customer_latitude: Optional[float] = None
-    customer_longitude: Optional[float] = None
 
 
 class CheckoutResponse(BaseModel):

@@ -1,7 +1,5 @@
 import json
-import random
 from datetime import datetime
-from typing import List, Optional
 from fastapi import HTTPException, Depends
 from sqlalchemy.orm import Session
 
@@ -183,8 +181,6 @@ class CartService:
             "customer_name": checkout_data.customer_name,
             "customer_phone": checkout_data.customer_phone,
             "customer_address": checkout_data.customer_address,
-            "customer_latitude": checkout_data.customer_latitude,
-            "customer_longitude": checkout_data.customer_longitude,
             "items": order_items,
             "total_amount": total_amount
         }
@@ -203,7 +199,11 @@ class CartService:
                 "delivery_code": order.delivery_code,
                 "total_amount": order.total_amount,
                 "items": order_items,
-                "status": order.status
+                "status": order.status,
+                "store_address": order.store_address,
+                "customer_address": order.customer_address,
+                "customer_name": order.customer_name,
+                "customer_phone": order.customer_phone
             },
             message="Заказ успешно оформлен! Сообщите код получения в магазине и код доставки клиенту."
         )
