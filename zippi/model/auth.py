@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 class BaseUser(BaseModel):
@@ -10,6 +10,7 @@ class UserCreate(BaseUser):
 
 class User(BaseUser):
     id: int
+    model_config = ConfigDict(from_attributes=True)
 
 class Token(BaseModel):
     access_token: str
@@ -19,5 +20,4 @@ class PrivateUser(User):
     access_token: str
     token_type: str = 'bearer'
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

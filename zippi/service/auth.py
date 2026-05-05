@@ -60,10 +60,6 @@ class AuthService:
 
             # Получаем словарь
             user_dict = user_data.dict()
-            # Принудительно преобразуем premium в строку
-            if 'premium' in user_dict:
-                if isinstance(user_dict['premium'], date):
-                    user_dict['premium'] = user_dict['premium'].isoformat()
 
             payload = {
                 'iat': now,
@@ -111,11 +107,9 @@ class AuthService:
     def reg(self, user_data: UserCreate) -> PrivateUser:
         if self.get_user_by_phone(user_data.phone):
             raise HTTPException(status_code=418, detail="User with this phone already exists")
-        premium = (datetime.now() - timedelta(days=1)).date()
         user = tables.User(
             phone=user_data.phone,
             username=user_data.username,
-            premium=premium,
             password_hash=self.hash_password(user_data.password))
         self.session.add(user)
         self.session.commit()
@@ -124,7 +118,6 @@ class AuthService:
         return PrivateUser(phone=created_user.phone,
                            username=created_user.username,
                            id=created_user.id,
-                           premium=premium,
                            access_token=token)
 
     # Настройка логирования
@@ -147,7 +140,6 @@ class AuthService:
             'phone': user.phone,
             'username': user.username,
             'id': user.id,
-            'premium': user.premium.isoformat(),
             'access_token': token,
             'token_type': 'bearer'
         }
@@ -156,10 +148,3 @@ class AuthService:
             return private_user
         except Exception as e:
             raise
-
-
-    async def change_name(self, user_id: int, new_name: str):
-        user = self.get_user(user_id)
-        user.username = new_name
-        self.session.commit()
-        return user
