@@ -2,19 +2,53 @@ from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException
 
 from ..model.auth import User
-from ..model.orders import OrderResponse, OrderCard, PickupConfirm, DeliveryConfirm
+from ..model.orders import (
+    OrderResponse, OrderCard, PickupConfirm,
+    DeliveryConfirm, ShiftCreate, ShiftResponse
+)
 from ..service.auth import get_current_user
 from ..service.orders import OrderService
 
 router = APIRouter(prefix='/orders', tags=['Заказы'])
 
 
-@router.get('/available', response_model=List[OrderCard])
-def get_available_orders(
+# ========== Смены ==========
+@router.post('/shift/start', response_model=ShiftResponse)
+def start_shift(
+    shift_data: ShiftCreate,
+    user: User = Depends(get_current_user),
     service: OrderService = Depends()
 ):
-    """Список доступных заказов для курьеров"""
-    return service.get_available_orders()
+    """Начало смены курьера"""
+    return service.start_shift(user.id, shift_data)
+
+
+@router.post('/shift/end', response_model=ShiftResponse)
+def end_shift(
+    user: User = Depends(get_current_user),
+    service: OrderService = Depends()
+):
+    """Завершение смены курьера"""
+    return service.end_shift(user.id)
+
+
+@router.get('/shift/current', response_model=Optional[ShiftResponse])
+def get_current_shift(
+    user: User = Depends(get_current_user),
+    service: OrderService = Depends()
+):
+    """Информация о текущей смене"""
+    return service.get_current_shift(user.id)
+
+
+# ========== Заказы ==========
+@router.get('/available', response_model=List[OrderCard])
+def get_available_orders(
+    user: User = Depends(get_current_user),
+    service: OrderService = Depends()
+):
+    """Список доступных заказов для курьеров (требуется активная смена)"""
+    return service.get_available_orders(user.id)
 
 
 @router.post('/take/{order_id}', response_model=OrderResponse)
@@ -23,7 +57,7 @@ def take_order(
     user: User = Depends(get_current_user),
     service: OrderService = Depends()
 ):
-    """Взять заказ в работу (только для курьеров)"""
+    """Взять заказ в работу (требуется активная смена)"""
     return service.take_order(order_id, user.id)
 
 

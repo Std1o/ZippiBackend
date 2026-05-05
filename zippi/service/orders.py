@@ -1,13 +1,13 @@
 import random
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import List, Optional
 
 from fastapi import HTTPException, Depends
 from sqlalchemy.orm import Session
 
 from ..database import get_session
-from ..model.orders import OrderResponse, OrderCard
+from ..model.orders import OrderResponse, OrderCard, ShiftCreate, ShiftResponse
 from .. import tables
 
 
@@ -76,8 +76,92 @@ class OrderService:
             courier_id=order.courier_id
         )
 
-    def get_available_orders(self) -> List[OrderCard]:
-        """Получение списка доступных заказов для курьеров (без сортировки по расстоянию)"""
+    # ========== Смены ==========
+    def start_shift(self, courier_id: int, shift_data: ShiftCreate) -> ShiftResponse:
+        """Начало смены курьера"""
+        # Проверяем активную смену
+        active_shift = self.session.query(tables.Shift).filter_by(
+            courier_id=courier_id,
+            is_active=True
+        ).first()
+
+        if active_shift:
+            raise HTTPException(status_code=400, detail="У вас уже есть активная смена")
+
+        shift = tables.Shift(
+            courier_id=courier_id,
+            start_time=datetime.utcnow(),
+            duration_hours=shift_data.duration_hours,
+            is_active=True
+        )
+
+        self.session.add(shift)
+        self.session.commit()
+        self.session.refresh(shift)
+
+        return ShiftResponse(
+            id=shift.id,
+            start_time=shift.start_time,
+            end_time=shift.end_time,
+            duration_hours=shift.duration_hours,
+            is_active=shift.is_active
+        )
+
+    def end_shift(self, courier_id: int) -> ShiftResponse:
+        """Завершение смены курьера"""
+        shift = self.session.query(tables.Shift).filter_by(
+            courier_id=courier_id,
+            is_active=True
+        ).first()
+
+        if not shift:
+            raise HTTPException(status_code=404, detail="Нет активной смены")
+
+        shift.end_time = datetime.utcnow()
+        shift.is_active = False
+        self.session.commit()
+        self.session.refresh(shift)
+
+        return ShiftResponse(
+            id=shift.id,
+            start_time=shift.start_time,
+            end_time=shift.end_time,
+            duration_hours=shift.duration_hours,
+            is_active=shift.is_active
+        )
+
+    def get_current_shift(self, courier_id: int) -> Optional[ShiftResponse]:
+        """Получение текущей смены курьера"""
+        shift = self.session.query(tables.Shift).filter_by(
+            courier_id=courier_id,
+            is_active=True
+        ).first()
+
+        if shift:
+            return ShiftResponse(
+                id=shift.id,
+                start_time=shift.start_time,
+                end_time=shift.end_time,
+                duration_hours=shift.duration_hours,
+                is_active=shift.is_active
+            )
+        return None
+
+    def is_shift_active(self, courier_id: int) -> bool:
+        """Проверка, активна ли смена у курьера"""
+        shift = self.session.query(tables.Shift).filter_by(
+            courier_id=courier_id,
+            is_active=True
+        ).first()
+        return shift is not None
+
+    # ========== Заказы ==========
+    def get_available_orders(self, courier_id: Optional[int] = None) -> List[OrderCard]:
+        """Получение списка доступных заказов для курьеров"""
+        # Если указан курьер, проверяем активную смену
+        if courier_id and not self.is_shift_active(courier_id):
+            raise HTTPException(status_code=403, detail="У вас нет активной смены. Начните смену чтобы видеть заказы")
+
         orders = self.session.query(tables.Order).filter(
             tables.Order.status.in_(['pending', 'ready']),
             tables.Order.is_active == True,
@@ -98,6 +182,10 @@ class OrderService:
 
     def take_order(self, order_id: int, courier_id: int) -> OrderResponse:
         """Взять заказ в работу"""
+        # Проверяем активную смену
+        if not self.is_shift_active(courier_id):
+            raise HTTPException(status_code=403, detail="У вас нет активной смены. Начните смену чтобы взять заказ")
+
         order = self.session.query(tables.Order).filter_by(id=order_id).first()
         if not order:
             raise HTTPException(status_code=404, detail="Заказ не найден")
@@ -116,6 +204,9 @@ class OrderService:
 
     def confirm_pickup(self, order_number: str, pickup_code: str, courier_id: int) -> OrderResponse:
         """Подтверждение получения заказа в магазине по коду"""
+        if not self.is_shift_active(courier_id):
+            raise HTTPException(status_code=403, detail="У вас нет активной смены")
+
         order = self.session.query(tables.Order).filter_by(order_number=order_number).first()
         if not order:
             raise HTTPException(status_code=404, detail="Заказ не найден")
@@ -138,6 +229,9 @@ class OrderService:
 
     def confirm_delivery(self, order_number: str, delivery_code: str, courier_id: int) -> OrderResponse:
         """Подтверждение доставки заказа по коду клиента"""
+        if not self.is_shift_active(courier_id):
+            raise HTTPException(status_code=403, detail="У вас нет активной смены")
+
         order = self.session.query(tables.Order).filter_by(order_number=order_number).first()
         if not order:
             raise HTTPException(status_code=404, detail="Заказ не найден")

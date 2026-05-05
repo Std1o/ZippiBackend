@@ -75,27 +75,23 @@ class Order(Base):
     __tablename__ = 'orders'
     id = sa.Column(sa.Integer, primary_key=True)
     order_number = sa.Column(sa.String(6), unique=True, nullable=False)
-    pickup_code = sa.Column(sa.String(4), nullable=False)  # код для получения в магазине
-    delivery_code = sa.Column(sa.String(4), nullable=False)  # код для подтверждения доставки
+    pickup_code = sa.Column(sa.String(4), nullable=False)
+    delivery_code = sa.Column(sa.String(4), nullable=False)
 
-    user_id = sa.Column(sa.Integer, ForeignKey('users.id'), nullable=False)  # клиент
-    courier_id = sa.Column(sa.Integer, ForeignKey('users.id'), nullable=True)  # курьер
+    user_id = sa.Column(sa.Integer, ForeignKey('users.id'), nullable=False)
+    courier_id = sa.Column(sa.Integer, ForeignKey('users.id'), nullable=True)
 
-    # Адреса (только текст)
     store_address = sa.Column(sa.String(500), nullable=False)
     customer_address = sa.Column(sa.String(500), nullable=False)
     customer_phone = sa.Column(sa.String(20), nullable=False)
     customer_name = sa.Column(sa.String(200))
 
-    # Информация о заказе
-    items = sa.Column(sa.Text, nullable=False)  # JSON
+    items = sa.Column(sa.Text, nullable=False)
     total_amount = sa.Column(sa.Float)
 
-    # Статусы
-    status = sa.Column(sa.String(50), default='pending')  # pending, ready, picked_up, delivered, cancelled
+    status = sa.Column(sa.String(50), default='pending')
     is_active = sa.Column(sa.Boolean, default=True)
 
-    # Временные метки
     created_at = sa.Column(sa.DateTime, default=datetime.utcnow)
     ready_at = sa.Column(sa.DateTime)
     picked_up_at = sa.Column(sa.DateTime)
@@ -103,6 +99,18 @@ class Order(Base):
 
     user = relationship("User", foreign_keys=[user_id], backref="orders_as_customer")
     courier = relationship("User", foreign_keys=[courier_id], backref="orders_as_courier")
+
+
+class Shift(Base):
+    __tablename__ = 'shifts'
+    id = sa.Column(sa.Integer, primary_key=True)
+    courier_id = sa.Column(sa.Integer, ForeignKey('users.id'), nullable=False)
+    start_time = sa.Column(sa.DateTime, nullable=False)
+    end_time = sa.Column(sa.DateTime)
+    duration_hours = sa.Column(sa.Integer)
+    is_active = sa.Column(sa.Boolean, default=True)
+
+    courier = relationship("User", foreign_keys=[courier_id], backref="shifts")
 
 
 class DeliveryHistory(Base):

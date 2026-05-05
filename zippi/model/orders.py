@@ -50,3 +50,15 @@ class PickupConfirm(BaseModel):
 class DeliveryConfirm(BaseModel):
     order_number: str
     delivery_code: str
+
+
+class ShiftCreate(BaseModel):
+    duration_hours: int
+
+
+class ShiftResponse(BaseModel):
+    id: int
+    start_time: datetime
+    end_time: Optional[datetime]
+    duration_hours: int
+    is_active: bool
