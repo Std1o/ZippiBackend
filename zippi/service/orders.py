@@ -8,7 +8,7 @@ from fastapi import HTTPException, Depends
 from sqlalchemy.orm import Session
 
 from ..database import get_session
-from ..model.orders import OrderCreate, OrderResponse, OrderCard, ShiftCreate, ShiftResponse, OrderItem
+from ..model.orders import OrderResponse, OrderCard, OrderItem
 from .. import tables
 
 
@@ -37,8 +37,8 @@ class OrderService:
         c = 2 * atan2(sqrt(a), sqrt(1 - a))
         return round(R * c, 2)
 
-    def create_order(self, order_data: OrderCreate) -> OrderResponse:
-        """Создание нового заказа"""
+    def create_order(self, user_id: int, order_data: dict) -> OrderResponse:
+        """Создание нового заказа из корзины"""
         order_number = self.generate_order_number()
         pickup_code = self.generate_code()
         delivery_code = self.generate_code()
@@ -47,16 +47,17 @@ class OrderService:
             order_number=order_number,
             pickup_code=pickup_code,
             delivery_code=delivery_code,
-            store_address=order_data.store_address,
-            store_latitude=order_data.store_latitude,
-            store_longitude=order_data.store_longitude,
-            customer_address=order_data.customer_address,
-            customer_latitude=order_data.customer_latitude,
-            customer_longitude=order_data.customer_longitude,
-            customer_phone=order_data.customer_phone,
-            customer_name=order_data.customer_name,
-            items=json.dumps([item.model_dump() for item in order_data.items]),
-            total_amount=order_data.total_amount,
+            user_id=user_id,
+            store_address=order_data.get('store_address', 'Магазин одежды, ул. Центральная, 1'),
+            store_latitude=order_data.get('store_latitude'),
+            store_longitude=order_data.get('store_longitude'),
+            customer_address=order_data['customer_address'],
+            customer_latitude=order_data.get('customer_latitude'),
+            customer_longitude=order_data.get('customer_longitude'),
+            customer_phone=order_data['customer_phone'],
+            customer_name=order_data['customer_name'],
+            items=json.dumps(order_data['items']),
+            total_amount=order_data['total_amount'],
             status='pending'
         )
 
@@ -79,7 +80,7 @@ class OrderService:
             customer_address=order.customer_address,
             customer_phone=order.customer_phone,
             customer_name=order.customer_name,
-            items=[OrderItem(**item) for item in items],
+            items=items,
             total_amount=order.total_amount or 0,
             status=order.status,
             is_active=order.is_active,
@@ -92,7 +93,7 @@ class OrderService:
 
     def get_available_orders(self, courier_lat: Optional[float] = None, courier_lon: Optional[float] = None) -> List[
         OrderCard]:
-        """Получение списка доступных заказов"""
+        """Получение списка доступных заказов для курьеров"""
         orders = self.session.query(tables.Order).filter(
             tables.Order.status.in_(['pending', 'ready']),
             tables.Order.is_active == True,
@@ -117,7 +118,7 @@ class OrderService:
                 distance=distance
             ))
 
-        # Сортировка по расстоянию
+        # Сортировка по расстоянию (ближе - выше)
         result.sort(key=lambda x: x.distance if x.distance is not None else float('inf'))
         return result
 
@@ -214,78 +215,8 @@ class OrderService:
 
         return self._to_response(order)
 
-    def start_shift(self, courier_id: int, shift_data: ShiftCreate) -> ShiftResponse:
-        """Начало смены курьера"""
-        # Проверяем активную смену
-        active_shift = self.session.query(tables.Shift).filter_by(
-            courier_id=courier_id,
-            is_active=True
-        ).first()
-
-        if active_shift:
-            raise HTTPException(status_code=400, detail="У вас уже есть активная смена")
-
-        shift = tables.Shift(
-            courier_id=courier_id,
-            start_time=datetime.utcnow(),
-            duration_hours=shift_data.duration_hours,
-            is_active=True
-        )
-
-        self.session.add(shift)
-        self.session.commit()
-        self.session.refresh(shift)
-
-        return ShiftResponse(
-            id=shift.id,
-            start_time=shift.start_time,
-            end_time=shift.end_time,
-            duration_hours=shift.duration_hours,
-            is_active=shift.is_active
-        )
-
-    def end_shift(self, courier_id: int) -> ShiftResponse:
-        """Завершение смены курьера"""
-        shift = self.session.query(tables.Shift).filter_by(
-            courier_id=courier_id,
-            is_active=True
-        ).first()
-
-        if not shift:
-            raise HTTPException(status_code=404, detail="Нет активной смены")
-
-        shift.end_time = datetime.utcnow()
-        shift.is_active = False
-        self.session.commit()
-        self.session.refresh(shift)
-
-        return ShiftResponse(
-            id=shift.id,
-            start_time=shift.start_time,
-            end_time=shift.end_time,
-            duration_hours=shift.duration_hours,
-            is_active=shift.is_active
-        )
-
-    def get_shift_info(self, courier_id: int) -> Optional[ShiftResponse]:
-        """Получение информации о текущей смене"""
-        shift = self.session.query(tables.Shift).filter_by(
-            courier_id=courier_id,
-            is_active=True
-        ).first()
-
-        if shift:
-            return ShiftResponse(
-                id=shift.id,
-                start_time=shift.start_time,
-                end_time=shift.end_time,
-                duration_hours=shift.duration_hours,
-                is_active=shift.is_active
-            )
-        return None
-
     def get_active_order(self, courier_id: int) -> Optional[OrderResponse]:
-        """Получение активного заказа курьера"""
+        """Получение активного заказа курьера (который он везёт)"""
         order = self.session.query(tables.Order).filter(
             tables.Order.courier_id == courier_id,
             tables.Order.status == 'picked_up'
@@ -323,3 +254,8 @@ class OrderService:
         if order:
             return self._to_response(order)
         return None
+
+    def get_my_orders_as_customer(self, user_id: int) -> List[OrderResponse]:
+        """Получение заказов пользователя (как клиента)"""
+        orders = self.session.query(tables.Order).filter_by(user_id=user_id).all()
+        return [self._to_response(order) for order in orders]

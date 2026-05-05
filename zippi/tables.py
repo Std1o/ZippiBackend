@@ -17,6 +17,7 @@ class User(Base):
     password_hash = sa.Column(sa.Text)
     is_courier = sa.Column(sa.Boolean, default=False)
     is_admin = sa.Column(sa.Boolean, default=False)
+    created_at = sa.Column(sa.DateTime, default=datetime.utcnow)
 
 
 class Category(Base):
@@ -74,11 +75,11 @@ class Order(Base):
     __tablename__ = 'orders'
     id = sa.Column(sa.Integer, primary_key=True)
     order_number = sa.Column(sa.String(6), unique=True, nullable=False)
-    pickup_code = sa.Column(sa.String(4), nullable=False)
-    delivery_code = sa.Column(sa.String(4), nullable=False)
+    pickup_code = sa.Column(sa.String(4), nullable=False)  # код для получения в магазине
+    delivery_code = sa.Column(sa.String(4), nullable=False)  # код для подтверждения доставки
 
     user_id = sa.Column(sa.Integer, ForeignKey('users.id'), nullable=False)  # клиент
-    courier_id = sa.Column(sa.Integer, ForeignKey('users.id'), nullable=True)
+    courier_id = sa.Column(sa.Integer, ForeignKey('users.id'), nullable=True)  # курьер
 
     # Адреса
     store_address = sa.Column(sa.String(500), nullable=False)
@@ -96,7 +97,7 @@ class Order(Base):
     total_amount = sa.Column(sa.Float)
 
     # Статусы
-    status = sa.Column(sa.String(50), default='pending')
+    status = sa.Column(sa.String(50), default='pending')  # pending, ready, picked_up, delivered, cancelled
     is_active = sa.Column(sa.Boolean, default=True)
 
     # Временные метки
@@ -105,20 +106,8 @@ class Order(Base):
     picked_up_at = sa.Column(sa.DateTime)
     delivered_at = sa.Column(sa.DateTime)
 
-    user = relationship("User", foreign_keys=[user_id])
-    courier = relationship("User", foreign_keys=[courier_id])
-
-
-class Shift(Base):
-    __tablename__ = 'shifts'
-    id = sa.Column(sa.Integer, primary_key=True)
-    courier_id = sa.Column(sa.Integer, ForeignKey('users.id'), nullable=False)
-    start_time = sa.Column(sa.DateTime, nullable=False)
-    end_time = sa.Column(sa.DateTime)
-    duration_hours = sa.Column(sa.Integer)
-    is_active = sa.Column(sa.Boolean, default=True)
-
-    courier = relationship("User", backref="shifts", foreign_keys=[courier_id])
+    user = relationship("User", foreign_keys=[user_id], backref="orders_as_customer")
+    courier = relationship("User", foreign_keys=[courier_id], backref="orders_as_courier")
 
 
 class DeliveryHistory(Base):

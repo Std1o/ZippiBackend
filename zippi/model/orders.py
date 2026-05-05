@@ -4,9 +4,11 @@ from datetime import datetime
 
 
 class OrderItem(BaseModel):
+    id: int
     name: str
     quantity: int
     price: float
+    total: float
 
 
 class OrderCreate(BaseModel):
@@ -14,7 +16,7 @@ class OrderCreate(BaseModel):
     customer_address: str
     customer_phone: str
     customer_name: str
-    items: List[OrderItem]
+    items: List[dict]
     total_amount: float
     store_latitude: Optional[float] = None
     store_longitude: Optional[float] = None
@@ -31,7 +33,7 @@ class OrderResponse(BaseModel):
     customer_address: str
     customer_phone: str
     customer_name: str
-    items: List[OrderItem]
+    items: List[dict]
     total_amount: float
     status: str
     is_active: bool
@@ -52,18 +54,6 @@ class OrderCard(BaseModel):
     customer_address: str
     status: str
     distance: Optional[float] = None
-
-
-class ShiftCreate(BaseModel):
-    duration_hours: int
-
-
-class ShiftResponse(BaseModel):
-    id: int
-    start_time: datetime
-    end_time: Optional[datetime]
-    duration_hours: int
-    is_active: bool
 
 
 class PickupConfirm(BaseModel):

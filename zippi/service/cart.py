@@ -10,7 +10,7 @@ from ..model.cart import (
     CartItemCreate, CartItemResponse, CartResponse,
     CartUpdate, CheckoutRequest, CheckoutResponse
 )
-from ..model.orders import OrderResponse, OrderItem
+from ..service.orders import OrderService
 from .. import tables
 
 
@@ -64,7 +64,6 @@ class CartService:
 
     def add_to_cart(self, user_id: int, item_data: CartItemCreate) -> CartResponse:
         """Добавление товара в корзину"""
-        # Проверяем существование товара
         product = self.session.query(tables.Product).filter_by(
             id=item_data.product_id,
             is_active=True
@@ -77,7 +76,6 @@ class CartService:
 
         cart = self._get_or_create_cart(user_id)
 
-        # Проверяем, есть ли уже этот товар в корзине
         cart_item = self.session.query(tables.CartItem).filter_by(
             cart_id=cart.id,
             product_id=item_data.product_id
@@ -149,17 +147,6 @@ class CartService:
         cart.updated_at = datetime.utcnow()
         self.session.commit()
 
-    def generate_order_number(self) -> str:
-        """Генерация 6-значного номера заказа"""
-        while True:
-            number = str(random.randint(100000, 999999))
-            if not self.session.query(tables.Order).filter_by(order_number=number).first():
-                return number
-
-    def generate_code(self) -> str:
-        """Генерация 4-значного кода"""
-        return f"{random.randint(1000, 9999)}"
-
     def checkout(self, user_id: int, checkout_data: CheckoutRequest) -> CheckoutResponse:
         """Оформление заказа из корзины"""
         cart = self._get_or_create_cart(user_id)
@@ -167,8 +154,8 @@ class CartService:
         if not cart.items:
             raise HTTPException(status_code=400, detail="Корзина пуста")
 
-        # Проверяем остатки товаров
-        items_list = []
+        # Проверяем остатки и формируем список товаров
+        order_items = []
         for item in cart.items:
             product = item.product
             if product.stock < item.quantity:
@@ -177,10 +164,6 @@ class CartService:
                     detail=f"Товара '{product.name}' недостаточно. В наличии: {product.stock}"
                 )
 
-        # Формируем список товаров для заказа
-        order_items = []
-        for item in cart.items:
-            product = item.product
             order_items.append({
                 "id": product.id,
                 "name": product.name,
@@ -192,38 +175,26 @@ class CartService:
             # Уменьшаем остатки
             product.stock -= item.quantity
 
-        # Генерируем коды
-        order_number = self.generate_order_number()
-        pickup_code = self.generate_code()
-        delivery_code = self.generate_code()
-
         total_amount = sum(item["total"] for item in order_items)
 
-        # Создаем заказ
-        order = tables.Order(
-            order_number=order_number,
-            pickup_code=pickup_code,
-            delivery_code=delivery_code,
-            user_id=user_id,
-            store_address="Магазин одежды, ул. Центральная, 1",  # Можно настроить
-            customer_name=checkout_data.customer_name,
-            customer_phone=checkout_data.customer_phone,
-            customer_address=checkout_data.customer_address,
-            customer_latitude=checkout_data.customer_latitude,
-            customer_longitude=checkout_data.customer_longitude,
-            items=json.dumps(order_items),
-            total_amount=total_amount,
-            status='pending'
-        )
+        # Создаём заказ через OrderService
+        order_service = OrderService(self.session)
+        order_data = {
+            "customer_name": checkout_data.customer_name,
+            "customer_phone": checkout_data.customer_phone,
+            "customer_address": checkout_data.customer_address,
+            "customer_latitude": checkout_data.customer_latitude,
+            "customer_longitude": checkout_data.customer_longitude,
+            "items": order_items,
+            "total_amount": total_amount
+        }
 
-        self.session.add(order)
+        order = order_service.create_order(user_id, order_data)
 
         # Очищаем корзину
         self.session.query(tables.CartItem).filter_by(cart_id=cart.id).delete()
         cart.updated_at = datetime.utcnow()
-
         self.session.commit()
-        self.session.refresh(order)
 
         return CheckoutResponse(
             order={
