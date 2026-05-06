@@ -1,11 +1,8 @@
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
-from sqlalchemy.orm import Session
-import json
-import asyncio
 
+from ..database import get_session
 from ..service.orders import OrderService
 from ..service.websocket_manager import manager
-from ..database import get_session
 
 router = APIRouter(tags=['WebSocket'])
 
@@ -47,29 +44,11 @@ async def websocket_order(
         # Отправляем текущий заказ
         await websocket.send_json(order.model_dump(mode='json'))
 
-        # Ожидаем сообщения (пинг-понг для поддержания соединения)
+        # Просто держим соединение открытым, ничего не ждём
         while True:
             try:
-                # Устанавливаем таймаут для получения сообщения
-                data = await asyncio.wait_for(websocket.receive_text(), timeout=30.0)
-
-                # Обрабатываем пинг
-                if data == "ping":
-                    await websocket.send_text("pong")
-                elif data:
-                    try:
-                        msg = json.loads(data)
-                        if msg.get('type') == 'ping':
-                            await websocket.send_json({"type": "pong"})
-                    except:
-                        pass
-
-            except asyncio.TimeoutError:
-                # Отправляем пинг для проверки соединения
-                try:
-                    await websocket.send_json({"type": "ping"})
-                except:
-                    break
+                # Просто ждём закрытия соединения
+                await websocket.receive_text()
             except WebSocketDisconnect:
                 break
 

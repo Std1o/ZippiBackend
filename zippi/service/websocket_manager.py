@@ -1,7 +1,6 @@
 from typing import Dict, Set
 from fastapi import WebSocket
 import json
-from datetime import datetime
 
 
 class ConnectionManager:

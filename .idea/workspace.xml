@@ -5,13 +5,9 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="f1688dad-2bea-466b-929b-183507702018" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/zippi/api/websocket.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/zippi/service/websocket_manager.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/database.sqlite3" beforeDir="false" afterPath="$PROJECT_DIR$/database.sqlite3" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/zippi/api/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/zippi/api/__init__.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/zippi/api/orders.py" beforeDir="false" afterPath="$PROJECT_DIR$/zippi/api/orders.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/zippi/service/orders.py" beforeDir="false" afterPath="$PROJECT_DIR$/zippi/service/orders.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/zippi/api/websocket.py" beforeDir="false" afterPath="$PROJECT_DIR$/zippi/api/websocket.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/zippi/service/websocket_manager.py" beforeDir="false" afterPath="$PROJECT_DIR$/zippi/service/websocket_manager.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
