@@ -39,8 +39,3 @@ class CheckoutRequest(BaseModel):
     customer_name: str
     customer_phone: str
     customer_address: str
-
-
-class CheckoutResponse(BaseModel):
-    order: dict
-    message: str

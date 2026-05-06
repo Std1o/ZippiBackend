@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from ..database import get_session
 from ..model.cart import (
     CartItemCreate, CartItemResponse, CartResponse,
-    CheckoutRequest, CheckoutResponse
+    CheckoutRequest
 )
 from ..service.orders import OrderService
 from .. import tables
@@ -129,7 +129,7 @@ class CartService:
         cart.updated_at = datetime.utcnow()
         self.session.commit()
 
-    def checkout(self, user_id: int, checkout_data: CheckoutRequest) -> CheckoutResponse:
+    def checkout(self, user_id: int, checkout_data: CheckoutRequest):
         """Оформление заказа из корзины"""
         cart = self._get_or_create_cart(user_id)
 
@@ -176,8 +176,7 @@ class CartService:
         cart.updated_at = datetime.utcnow()
         self.session.commit()
 
-        return CheckoutResponse(
-            order={
+        return {
                 "order_number": order.order_number,
                 "pickup_code": order.pickup_code,
                 "delivery_code": order.delivery_code,
@@ -188,6 +187,4 @@ class CartService:
                 "customer_address": order.customer_address,
                 "customer_name": order.customer_name,
                 "customer_phone": order.customer_phone
-            },
-            message="Заказ успешно оформлен! Сообщите код получения в магазине и код доставки клиенту."
-        )
+            }

@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from ..model.auth import User
 from ..model.cart import (
-    CartItemCreate, CartResponse, CheckoutRequest, CheckoutResponse
+    CartItemCreate, CartResponse, CheckoutRequest
 )
 from ..service.auth import get_current_user
 from ..service.cart import CartService
@@ -52,7 +52,7 @@ def clear_cart(
     return {"message": "Корзина очищена"}
 
 
-@router.post('/checkout', response_model=CheckoutResponse)
+@router.post('/checkout')
 def checkout(
     checkout_data: CheckoutRequest,
     user: User = Depends(get_current_user),
