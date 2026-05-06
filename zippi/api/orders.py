@@ -62,33 +62,33 @@ def take_order(
 
 
 @router.post('/confirm-pickup', response_model=OrderResponse)
-def confirm_pickup(
+async def confirm_pickup(
     data: PickupConfirm,
     user: User = Depends(get_current_user),
     service: OrderService = Depends()
 ):
     """Подтверждение получения заказа в магазине (по 4-значному коду)"""
-    return service.confirm_pickup(data.order_number, data.pickup_code, user.id)
+    return await service.confirm_pickup(data.order_number, data.pickup_code, user.id)
 
 
 @router.post('/confirm-delivery', response_model=OrderResponse)
-def confirm_delivery(
+async def confirm_delivery(
     data: DeliveryConfirm,
     user: User = Depends(get_current_user),
     service: OrderService = Depends()
 ):
     """Подтверждение доставки заказа клиенту (по 4-значному коду)"""
-    return service.confirm_delivery(data.order_number, data.delivery_code, user.id)
+    return await service.confirm_delivery(data.order_number, data.delivery_code, user.id)
 
 
 @router.put('/status/{order_number}', response_model=OrderResponse)
-def update_order_status(
+async def update_order_status(
     order_number: str,
     status: OrderStatus = Query(..., description="Новый статус заказа"),
     service: OrderService = Depends()
 ):
     """Обновление статуса заказа (для магазина/админа)"""
-    return service.update_order_status(order_number, status.value)
+    return await service.update_order_status(order_number, status.value)
 
 
 @router.get('/active', response_model=Optional[OrderResponse])
@@ -125,16 +125,3 @@ def get_my_purchases(
 ):
     """Мои заказы как клиента"""
     return service.get_my_orders_as_customer(user.id)
-
-
-@router.get('/{order_number}', response_model=OrderResponse)
-def get_order(
-    order_number: str,
-    user: User = Depends(get_current_user),
-    service: OrderService = Depends()
-):
-    """Детальная информация о заказе"""
-    order = service.get_order_by_number(order_number)
-    if not order:
-        raise HTTPException(status_code=404, detail="Заказ не найден")
-    return order

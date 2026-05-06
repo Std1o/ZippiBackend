@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 
 from ..database import get_session
 from ..model.orders import OrderResponse, OrderCard, ShiftCreate, ShiftResponse, OrderStatus
+from ..service.websocket_manager import manager
 from .. import tables
 
 
@@ -25,6 +26,18 @@ class OrderService:
     def generate_code(self) -> str:
         """Генерация 4-значного кода"""
         return f"{random.randint(1000, 9999)}"
+
+    async def _notify_order_update(self, order: tables.Order):
+        """Отправка уведомления об обновлении заказа через WebSocket"""
+        order_response = self._to_response(order)
+        await manager.send_order_update(
+            order.order_number,
+            order_response.model_dump(mode='json')
+        )
+
+    async def _notify_status_change(self, order_number: str, old_status: str, new_status: str):
+        """Отправка уведомления об изменении статуса"""
+        await manager.broadcast_order_status_change(order_number, old_status, new_status)
 
     def create_order(self, user_id: int, order_data: dict) -> OrderResponse:
         """Создание нового заказа из корзины"""
@@ -199,7 +212,7 @@ class OrderService:
 
         return self._to_response(order)
 
-    def confirm_pickup(self, order_number: str, pickup_code: str, courier_id: int) -> OrderResponse:
+    async def confirm_pickup(self, order_number: str, pickup_code: str, courier_id: int) -> OrderResponse:
         """Подтверждение получения заказа в магазине по коду"""
         if not self.is_shift_active(courier_id):
             raise HTTPException(status_code=403, detail="У вас нет активной смены")
@@ -222,9 +235,13 @@ class OrderService:
         self.session.commit()
         self.session.refresh(order)
 
+        # Отправляем обновление через WebSocket (только сущность order)
+        order_response = self._to_response(order)
+        await manager.send_order_update(order_number, order_response.model_dump(mode='json'))
+
         return self._to_response(order)
 
-    def confirm_delivery(self, order_number: str, delivery_code: str, courier_id: int) -> OrderResponse:
+    async def confirm_delivery(self, order_number: str, delivery_code: str, courier_id: int) -> OrderResponse:
         """Подтверждение доставки заказа по коду клиента"""
         if not self.is_shift_active(courier_id):
             raise HTTPException(status_code=403, detail="У вас нет активной смены")
@@ -258,9 +275,13 @@ class OrderService:
         self.session.add(history)
         self.session.commit()
 
+        # Отправляем обновление через WebSocket (только сущность order)
+        order_response = self._to_response(order)
+        await manager.send_order_update(order_number, order_response.model_dump(mode='json'))
+
         return self._to_response(order)
 
-    def update_order_status(self, order_number: str, status: str) -> OrderResponse:
+    async def update_order_status(self, order_number: str, status: str) -> OrderResponse:
         """Обновление статуса заказа (для магазина)"""
         order = self.session.query(tables.Order).filter_by(order_number=order_number).first()
         if not order:
@@ -284,6 +305,10 @@ class OrderService:
 
         self.session.commit()
         self.session.refresh(order)
+
+        # Отправляем обновление через WebSocket (только сущность order)
+        order_response = self._to_response(order)
+        await manager.send_order_update(order_number, order_response.model_dump(mode='json'))
 
         return self._to_response(order)
 
