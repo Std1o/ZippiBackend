@@ -1,6 +1,6 @@
 import random
 import json
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import List, Optional
 
 from fastapi import HTTPException, Depends
@@ -34,10 +34,6 @@ class OrderService:
             order.order_number,
             order_response.model_dump(mode='json')
         )
-
-    async def _notify_status_change(self, order_number: str, old_status: str, new_status: str):
-        """Отправка уведомления об изменении статуса"""
-        await manager.broadcast_order_status_change(order_number, old_status, new_status)
 
     def create_order(self, user_id: int, order_data: dict) -> OrderResponse:
         """Создание нового заказа из корзины"""
@@ -83,7 +79,6 @@ class OrderService:
             status=OrderStatus(order.status),  # Конвертируем строку в Enum
             is_active=order.is_active,
             created_at=order.created_at,
-            ready_at=order.ready_at,
             picked_up_at=order.picked_up_at,
             delivered_at=order.delivered_at,
             courier_id=order.courier_id
@@ -174,7 +169,7 @@ class OrderService:
             raise HTTPException(status_code=403, detail="У вас нет активной смены. Начните смену чтобы видеть заказы")
 
         orders = self.session.query(tables.Order).filter(
-            tables.Order.status.in_([OrderStatus.PENDING.value, OrderStatus.READY.value]),
+            tables.Order.status == OrderStatus.PENDING.value,
             tables.Order.is_active == True,
             tables.Order.courier_id.is_(None)
         ).order_by(tables.Order.created_at.asc()).all()
@@ -191,7 +186,7 @@ class OrderService:
 
         return result
 
-    def take_order(self, order_id: int, courier_id: int) -> OrderResponse:
+    async def take_order(self, order_id: int, courier_id: int) -> OrderResponse:
         """Взять заказ в работу"""
         if not self.is_shift_active(courier_id):
             raise HTTPException(status_code=403, detail="У вас нет активной смены. Начните смену чтобы взять заказ")
@@ -203,12 +198,18 @@ class OrderService:
         if order.courier_id is not None:
             raise HTTPException(status_code=400, detail="Заказ уже взят другим курьером")
 
-        if order.status not in [OrderStatus.PENDING.value, OrderStatus.READY.value]:
+        if order.status != OrderStatus.PENDING.value:
             raise HTTPException(status_code=400, detail=f"Заказ нельзя взять (статус: {order.status})")
 
+        # Назначаем курьера И меняем статус
         order.courier_id = courier_id
+        order.status = OrderStatus.PICKED_UP.value  # Меняем статус сразу
+        order.picked_up_at = datetime.utcnow()
         self.session.commit()
         self.session.refresh(order)
+
+        # Отправляем обновление через WebSocket
+        await self._notify_order_update(order)
 
         return self._to_response(order)
 
@@ -227,17 +228,16 @@ class OrderService:
         if order.pickup_code != pickup_code:
             raise HTTPException(status_code=400, detail="Неверный код получения")
 
-        if order.status != OrderStatus.READY.value:
-            raise HTTPException(status_code=400, detail=f"Заказ не готов к выдаче (статус: {order.status})")
+        if order.status != OrderStatus.PENDING.value:
+            raise HTTPException(status_code=400, detail=f"Заказ нельзя получить (статус: {order.status})")
 
         order.status = OrderStatus.PICKED_UP.value
         order.picked_up_at = datetime.utcnow()
         self.session.commit()
         self.session.refresh(order)
 
-        # Отправляем обновление через WebSocket (только сущность order)
-        order_response = self._to_response(order)
-        await manager.send_order_update(order_number, order_response.model_dump(mode='json'))
+        # Отправляем обновление через WebSocket
+        await self._notify_order_update(order)
 
         return self._to_response(order)
 
@@ -275,40 +275,8 @@ class OrderService:
         self.session.add(history)
         self.session.commit()
 
-        # Отправляем обновление через WebSocket (только сущность order)
-        order_response = self._to_response(order)
-        await manager.send_order_update(order_number, order_response.model_dump(mode='json'))
-
-        return self._to_response(order)
-
-    async def update_order_status(self, order_number: str, status: str) -> OrderResponse:
-        """Обновление статуса заказа (для магазина)"""
-        order = self.session.query(tables.Order).filter_by(order_number=order_number).first()
-        if not order:
-            raise HTTPException(status_code=404, detail="Заказ не найден")
-
-        # Проверяем корректность статуса
-        try:
-            new_status = OrderStatus(status)
-        except ValueError:
-            raise HTTPException(status_code=400,
-                                detail=f"Неверный статус. Допустимые значения: {[s.value for s in OrderStatus]}")
-
-        if new_status == OrderStatus.READY and order.status == OrderStatus.PENDING.value:
-            order.status = OrderStatus.READY.value
-            order.ready_at = datetime.utcnow()
-        elif new_status == OrderStatus.CANCELLED:
-            order.status = OrderStatus.CANCELLED.value
-            order.is_active = False
-        else:
-            raise HTTPException(status_code=400, detail=f"Нельзя изменить статус с {order.status} на {status}")
-
-        self.session.commit()
-        self.session.refresh(order)
-
-        # Отправляем обновление через WebSocket (только сущность order)
-        order_response = self._to_response(order)
-        await manager.send_order_update(order_number, order_response.model_dump(mode='json'))
+        # Отправляем обновление через WebSocket
+        await self._notify_order_update(order)
 
         return self._to_response(order)
 

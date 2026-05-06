@@ -6,8 +6,7 @@ from enum import Enum
 
 class OrderStatus(str, Enum):
     """Статусы заказа"""
-    PENDING = "pending"  # Заказ создан, ожидает готовности в магазине
-    READY = "ready"  # Заказ готов к выдаче
+    PENDING = "pending"  # Заказ создан, ожидает курьера
     PICKED_UP = "picked_up"  # Курьер забрал заказ из магазина
     DELIVERED = "delivered"  # Заказ доставлен клиенту
     CANCELLED = "cancelled"  # Заказ отменён
@@ -35,7 +34,6 @@ class OrderResponse(BaseModel):
     status: OrderStatus
     is_active: bool
     created_at: datetime
-    ready_at: Optional[datetime]
     picked_up_at: Optional[datetime]
     delivered_at: Optional[datetime]
     courier_id: Optional[int]

@@ -2,7 +2,7 @@ from datetime import datetime
 import json
 
 import sqlalchemy as sa
-from sqlalchemy import Float, ForeignKey, Text, Boolean, Integer, String
+from sqlalchemy import ForeignKey, Text, Boolean, Integer, String
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 
@@ -16,7 +16,6 @@ class User(Base):
     username = sa.Column(sa.Text)
     password_hash = sa.Column(sa.Text)
     is_courier = sa.Column(sa.Boolean, default=False)
-    is_admin = sa.Column(sa.Boolean, default=False)
     created_at = sa.Column(sa.DateTime, default=datetime.utcnow)
 
 
@@ -94,7 +93,6 @@ class Order(Base):
     is_active = sa.Column(sa.Boolean, default=True)
 
     created_at = sa.Column(sa.DateTime, default=datetime.utcnow)
-    ready_at = sa.Column(sa.DateTime)
     picked_up_at = sa.Column(sa.DateTime)
     delivered_at = sa.Column(sa.DateTime)
 

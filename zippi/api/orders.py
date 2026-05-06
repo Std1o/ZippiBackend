@@ -1,10 +1,10 @@
 from typing import List, Optional
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException
 
 from ..model.auth import User
 from ..model.orders import (
     OrderResponse, OrderCard, PickupConfirm,
-    DeliveryConfirm, ShiftCreate, ShiftResponse, OrderStatus
+    DeliveryConfirm, ShiftCreate, ShiftResponse
 )
 from ..service.auth import get_current_user
 from ..service.orders import OrderService
@@ -52,13 +52,13 @@ def get_available_orders(
 
 
 @router.post('/take/{order_id}', response_model=OrderResponse)
-def take_order(
+async def take_order(
     order_id: int,
     user: User = Depends(get_current_user),
     service: OrderService = Depends()
 ):
-    """Взять заказ в работу (требуется активная смена)"""
-    return service.take_order(order_id, user.id)
+    """Взять заказ в работу"""
+    return await service.take_order(order_id, user.id)
 
 
 @router.post('/confirm-pickup', response_model=OrderResponse)
@@ -79,16 +79,6 @@ async def confirm_delivery(
 ):
     """Подтверждение доставки заказа клиенту (по 4-значному коду)"""
     return await service.confirm_delivery(data.order_number, data.delivery_code, user.id)
-
-
-@router.put('/status/{order_number}', response_model=OrderResponse)
-async def update_order_status(
-    order_number: str,
-    status: OrderStatus = Query(..., description="Новый статус заказа"),
-    service: OrderService = Depends()
-):
-    """Обновление статуса заказа (для магазина/админа)"""
-    return await service.update_order_status(order_number, status.value)
 
 
 @router.get('/active', response_model=Optional[OrderResponse])
