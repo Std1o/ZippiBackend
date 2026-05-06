@@ -1,6 +1,16 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from typing import List, Optional
 from datetime import datetime
+from enum import Enum
+
+
+class OrderStatus(str, Enum):
+    """Статусы заказа"""
+    PENDING = "pending"  # Заказ создан, ожидает готовности в магазине
+    READY = "ready"  # Заказ готов к выдаче
+    PICKED_UP = "picked_up"  # Курьер забрал заказ из магазина
+    DELIVERED = "delivered"  # Заказ доставлен клиенту
+    CANCELLED = "cancelled"  # Заказ отменён
 
 
 class OrderItem(BaseModel):
@@ -22,7 +32,7 @@ class OrderResponse(BaseModel):
     customer_name: str
     items: List[dict]
     total_amount: float
-    status: str
+    status: OrderStatus
     is_active: bool
     created_at: datetime
     ready_at: Optional[datetime]
@@ -30,8 +40,7 @@ class OrderResponse(BaseModel):
     delivered_at: Optional[datetime]
     courier_id: Optional[int]
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class OrderCard(BaseModel):
@@ -39,7 +48,9 @@ class OrderCard(BaseModel):
     order_number: str
     store_address: str
     customer_address: str
-    status: str
+    status: OrderStatus
+
+    model_config = ConfigDict(from_attributes=True)
 
 
 class PickupConfirm(BaseModel):
@@ -62,3 +73,5 @@ class ShiftResponse(BaseModel):
     end_time: Optional[datetime]
     duration_hours: int
     is_active: bool
+
+    model_config = ConfigDict(from_attributes=True)

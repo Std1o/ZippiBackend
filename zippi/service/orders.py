@@ -7,7 +7,7 @@ from fastapi import HTTPException, Depends
 from sqlalchemy.orm import Session
 
 from ..database import get_session
-from ..model.orders import OrderResponse, OrderCard, ShiftCreate, ShiftResponse
+from ..model.orders import OrderResponse, OrderCard, ShiftCreate, ShiftResponse, OrderStatus
 from .. import tables
 
 
@@ -43,7 +43,7 @@ class OrderService:
             customer_name=order_data['customer_name'],
             items=json.dumps(order_data['items']),
             total_amount=order_data['total_amount'],
-            status='pending'
+            status=OrderStatus.PENDING.value
         )
 
         self.session.add(order)
@@ -67,7 +67,7 @@ class OrderService:
             customer_name=order.customer_name,
             items=items,
             total_amount=order.total_amount or 0,
-            status=order.status,
+            status=OrderStatus(order.status),  # Конвертируем строку в Enum
             is_active=order.is_active,
             created_at=order.created_at,
             ready_at=order.ready_at,
@@ -79,7 +79,6 @@ class OrderService:
     # ========== Смены ==========
     def start_shift(self, courier_id: int, shift_data: ShiftCreate) -> ShiftResponse:
         """Начало смены курьера"""
-        # Проверяем активную смену
         active_shift = self.session.query(tables.Shift).filter_by(
             courier_id=courier_id,
             is_active=True
@@ -158,12 +157,11 @@ class OrderService:
     # ========== Заказы ==========
     def get_available_orders(self, courier_id: Optional[int] = None) -> List[OrderCard]:
         """Получение списка доступных заказов для курьеров"""
-        # Если указан курьер, проверяем активную смену
         if courier_id and not self.is_shift_active(courier_id):
             raise HTTPException(status_code=403, detail="У вас нет активной смены. Начните смену чтобы видеть заказы")
 
         orders = self.session.query(tables.Order).filter(
-            tables.Order.status.in_(['pending', 'ready']),
+            tables.Order.status.in_([OrderStatus.PENDING.value, OrderStatus.READY.value]),
             tables.Order.is_active == True,
             tables.Order.courier_id.is_(None)
         ).order_by(tables.Order.created_at.asc()).all()
@@ -175,14 +173,13 @@ class OrderService:
                 order_number=order.order_number,
                 store_address=order.store_address,
                 customer_address=order.customer_address,
-                status=order.status
+                status=OrderStatus(order.status)
             ))
 
         return result
 
     def take_order(self, order_id: int, courier_id: int) -> OrderResponse:
         """Взять заказ в работу"""
-        # Проверяем активную смену
         if not self.is_shift_active(courier_id):
             raise HTTPException(status_code=403, detail="У вас нет активной смены. Начните смену чтобы взять заказ")
 
@@ -193,7 +190,7 @@ class OrderService:
         if order.courier_id is not None:
             raise HTTPException(status_code=400, detail="Заказ уже взят другим курьером")
 
-        if order.status not in ['pending', 'ready']:
+        if order.status not in [OrderStatus.PENDING.value, OrderStatus.READY.value]:
             raise HTTPException(status_code=400, detail=f"Заказ нельзя взять (статус: {order.status})")
 
         order.courier_id = courier_id
@@ -217,10 +214,10 @@ class OrderService:
         if order.pickup_code != pickup_code:
             raise HTTPException(status_code=400, detail="Неверный код получения")
 
-        if order.status != 'ready':
+        if order.status != OrderStatus.READY.value:
             raise HTTPException(status_code=400, detail=f"Заказ не готов к выдаче (статус: {order.status})")
 
-        order.status = 'picked_up'
+        order.status = OrderStatus.PICKED_UP.value
         order.picked_up_at = datetime.utcnow()
         self.session.commit()
         self.session.refresh(order)
@@ -242,10 +239,10 @@ class OrderService:
         if order.delivery_code != delivery_code:
             raise HTTPException(status_code=400, detail="Неверный код доставки")
 
-        if order.status != 'picked_up':
+        if order.status != OrderStatus.PICKED_UP.value:
             raise HTTPException(status_code=400, detail=f"Заказ нельзя доставить (статус: {order.status})")
 
-        order.status = 'delivered'
+        order.status = OrderStatus.DELIVERED.value
         order.delivered_at = datetime.utcnow()
         order.is_active = False
         self.session.commit()
@@ -269,11 +266,18 @@ class OrderService:
         if not order:
             raise HTTPException(status_code=404, detail="Заказ не найден")
 
-        if status == 'ready' and order.status == 'pending':
-            order.status = 'ready'
+        # Проверяем корректность статуса
+        try:
+            new_status = OrderStatus(status)
+        except ValueError:
+            raise HTTPException(status_code=400,
+                                detail=f"Неверный статус. Допустимые значения: {[s.value for s in OrderStatus]}")
+
+        if new_status == OrderStatus.READY and order.status == OrderStatus.PENDING.value:
+            order.status = OrderStatus.READY.value
             order.ready_at = datetime.utcnow()
-        elif status == 'cancelled':
-            order.status = 'cancelled'
+        elif new_status == OrderStatus.CANCELLED:
+            order.status = OrderStatus.CANCELLED.value
             order.is_active = False
         else:
             raise HTTPException(status_code=400, detail=f"Нельзя изменить статус с {order.status} на {status}")
@@ -287,7 +291,7 @@ class OrderService:
         """Получение активного заказа курьера (который он везёт)"""
         order = self.session.query(tables.Order).filter(
             tables.Order.courier_id == courier_id,
-            tables.Order.status == 'picked_up'
+            tables.Order.status == OrderStatus.PICKED_UP.value
         ).first()
 
         if order:

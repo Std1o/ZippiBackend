@@ -89,6 +89,7 @@ class Order(Base):
     items = sa.Column(sa.Text, nullable=False)
     total_amount = sa.Column(sa.Float)
 
+    # Используем String для хранения статуса, но в коде работаем с Enum
     status = sa.Column(sa.String(50), default='pending')
     is_active = sa.Column(sa.Boolean, default=True)
 

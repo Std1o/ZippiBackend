@@ -1,10 +1,10 @@
 from typing import List, Optional
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 
 from ..model.auth import User
 from ..model.orders import (
     OrderResponse, OrderCard, PickupConfirm,
-    DeliveryConfirm, ShiftCreate, ShiftResponse
+    DeliveryConfirm, ShiftCreate, ShiftResponse, OrderStatus
 )
 from ..service.auth import get_current_user
 from ..service.orders import OrderService
@@ -84,11 +84,11 @@ def confirm_delivery(
 @router.put('/status/{order_number}', response_model=OrderResponse)
 def update_order_status(
     order_number: str,
-    status: str,
+    status: OrderStatus = Query(..., description="Новый статус заказа"),
     service: OrderService = Depends()
 ):
     """Обновление статуса заказа (для магазина/админа)"""
-    return service.update_order_status(order_number, status)
+    return service.update_order_status(order_number, status.value)
 
 
 @router.get('/active', response_model=Optional[OrderResponse])
