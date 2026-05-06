@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from ..database import get_session
 from ..model.cart import (
     CartItemCreate, CartItemResponse, CartResponse,
-    CartUpdate, CheckoutRequest, CheckoutResponse
+    CheckoutRequest, CheckoutResponse
 )
 from ..service.orders import OrderService
 from .. import tables
@@ -94,45 +94,29 @@ class CartService:
 
         return self._to_cart_response(cart)
 
-    def update_cart_item(self, user_id: int, item_id: int, update_data: CartUpdate) -> CartResponse:
-        """Обновление количества товара в корзине"""
+    def remove_cart_item(self, user_id: int, product_id: int) -> CartResponse:
+        """
+        Удаление или уменьшение количества товара в корзине.
+        Уменьшает количество на 1. Если количество становится 0 или меньше, удаляет товар.
+        """
         cart = self._get_or_create_cart(user_id)
 
+        # Находим товар в корзине
         cart_item = self.session.query(tables.CartItem).filter_by(
-            id=item_id,
-            cart_id=cart.id
+            cart_id=cart.id,
+            product_id=product_id
         ).first()
 
         if not cart_item:
             raise HTTPException(status_code=404, detail="Товар не найден в корзине")
 
-        product = cart_item.product
-        if product.stock < update_data.quantity:
-            raise HTTPException(status_code=400, detail=f"Недостаточно товара. В наличии: {product.stock}")
+        # Уменьшаем количество на 1
+        cart_item.quantity -= 1
 
-        if update_data.quantity <= 0:
+        # Если количество стало 0 или меньше, удаляем товар из корзины
+        if cart_item.quantity <= 0:
             self.session.delete(cart_item)
-        else:
-            cart_item.quantity = update_data.quantity
 
-        cart.updated_at = datetime.utcnow()
-        self.session.commit()
-
-        return self._to_cart_response(cart)
-
-    def remove_from_cart(self, user_id: int, item_id: int) -> CartResponse:
-        """Удаление товара из корзины"""
-        cart = self._get_or_create_cart(user_id)
-
-        cart_item = self.session.query(tables.CartItem).filter_by(
-            id=item_id,
-            cart_id=cart.id
-        ).first()
-
-        if not cart_item:
-            raise HTTPException(status_code=404, detail="Товар не найден в корзине")
-
-        self.session.delete(cart_item)
         cart.updated_at = datetime.utcnow()
         self.session.commit()
 

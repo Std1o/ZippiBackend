@@ -1,9 +1,8 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 
 from ..model.auth import User
 from ..model.cart import (
-    CartItemCreate, CartResponse, CartUpdate,
-    CheckoutRequest, CheckoutResponse
+    CartItemCreate, CartResponse, CheckoutRequest, CheckoutResponse
 )
 from ..service.auth import get_current_user
 from ..service.cart import CartService
@@ -30,25 +29,17 @@ def add_to_cart(
     return service.add_to_cart(user.id, item)
 
 
-@router.put('/item/{item_id}', response_model=CartResponse)
-def update_cart_item(
-    item_id: int,
-    update_data: CartUpdate,
+@router.delete('/item/{product_id}', response_model=CartResponse)
+def remove_cart_item(
+    product_id: int,
     user: User = Depends(get_current_user),
     service: CartService = Depends()
 ):
-    """Обновление количества товара в корзине"""
-    return service.update_cart_item(user.id, item_id, update_data)
-
-
-@router.delete('/item/{item_id}', response_model=CartResponse)
-def remove_from_cart(
-    item_id: int,
-    user: User = Depends(get_current_user),
-    service: CartService = Depends()
-):
-    """Удаление товара из корзины"""
-    return service.remove_from_cart(user.id, item_id)
+    """
+    Удаление или уменьшение количества товара из корзины.
+    Уменьшает количество на 1. Если количество становится 0, товар удаляется.
+    """
+    return service.remove_cart_item(user.id, product_id)
 
 
 @router.delete('/clear')
@@ -56,7 +47,7 @@ def clear_cart(
     user: User = Depends(get_current_user),
     service: CartService = Depends()
 ):
-    """Очистка корзины"""
+    """Полная очистка корзины"""
     service.clear_cart(user.id)
     return {"message": "Корзина очищена"}
 
