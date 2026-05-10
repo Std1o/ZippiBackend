@@ -303,7 +303,7 @@ class OrderService:
         ).first()
 
         if order:
-            return self._to_order_response(order)
+            return self._to_response(order)
         return None
 
     def get_order_history(self, courier_id: int) -> List[dict]:
