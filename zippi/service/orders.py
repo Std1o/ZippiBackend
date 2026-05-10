@@ -291,6 +291,21 @@ class OrderService:
             return self._to_response(order)
         return None
 
+    def get_active_order_for_customer(self, user_id: int) -> Optional[OrderResponse]:
+        """Получение активного заказа клиента (который он ожидает)"""
+        order = self.session.query(tables.Order).filter(
+            tables.Order.user_id == user_id,
+            tables.Order.status.in_([
+                OrderStatus.PENDING.value,
+                OrderStatus.PICKED_UP.value
+            ]),
+            tables.Order.is_active == True
+        ).first()
+
+        if order:
+            return self._to_order_response(order)
+        return None
+
     def get_order_history(self, courier_id: int) -> List[dict]:
         """Получение истории доставок курьера"""
         history = self.session.query(tables.DeliveryHistory).filter_by(

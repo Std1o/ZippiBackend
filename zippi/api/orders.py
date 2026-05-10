@@ -89,6 +89,14 @@ def get_active_order(
     """Активный заказ курьера (который сейчас везёт)"""
     return service.get_active_order(user.id)
 
+@router.get('/active_for_customer', response_model=Optional[OrderResponse])
+def get_active_order_for_customer(
+    user: User = Depends(get_current_user),
+    service: OrderService = Depends()
+):
+    """Активный заказ клиента"""
+    return service.get_active_order_for_customer(user.id)
+
 
 @router.get('/history')
 def get_history(
