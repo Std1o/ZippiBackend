@@ -7,6 +7,7 @@ class BaseUser(BaseModel):
 
 class UserCreate(BaseUser):
     password: str
+    is_courier: bool
 
 class User(BaseUser):
     id: int
