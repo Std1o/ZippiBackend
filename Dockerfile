@@ -2,6 +2,8 @@ FROM python:3.9
 
 WORKDIR /code
 
+RUN mkdir -p /code/zippi/images
+
 COPY ./requirements.txt /code/
 
 RUN pip install -r requirements.txt
