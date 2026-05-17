@@ -30,3 +30,7 @@ def get_couriers_stats(service: AuthService = Depends()):
     Получить список курьеров с количеством заказов и отработанных часов.
     """
     return service.get_couriers_with_stats()
+
+@router.get('/set_courier', response_model=User)
+def set_courier(user: User = Depends(get_current_user), service: AuthService = Depends()):
+    return service.set_courier(user.id)

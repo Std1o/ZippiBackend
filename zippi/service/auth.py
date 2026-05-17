@@ -191,3 +191,10 @@ class AuthService:
             })
 
         return results
+
+    def set_courier(self, user_id: int):
+        user = self.get_user(user_id)
+        user.is_courier = True
+        self.session.commit()
+        self.session.refresh(user)
+        return {"success": True}
