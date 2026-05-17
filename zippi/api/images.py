@@ -13,6 +13,7 @@ def get_image(image_name: str):
 
 @router.post("/upload/")
 async def create_upload_file(request: Request, upload_file: UploadFile):
+    os.makedirs("zippi/images", exist_ok=True)
     try:
         file_path = f"zippi/images/{upload_file.filename}"
         with open(file_path, "wb") as buffer:
