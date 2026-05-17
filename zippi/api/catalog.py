@@ -78,7 +78,6 @@ def get_product(product_id: int, service: CatalogService = Depends()):
 @router.post('/products', response_model=ProductResponse)
 def create_product(
     product_data: ProductCreate,
-    user: User = Depends(get_current_user),
     service: CatalogService = Depends()
 ):
     """Создание товара (только для админа)"""
@@ -89,7 +88,6 @@ def create_product(
 def update_product(
     product_id: int,
     product_data: ProductCreate,
-    user: User = Depends(get_current_user),
     service: CatalogService = Depends()
 ):
     """Обновление товара (только для админа)"""
@@ -110,7 +108,6 @@ def update_stock(
 @router.delete('/products/{product_id}')
 def delete_product(
     product_id: int,
-    user: User = Depends(get_current_user),
     service: CatalogService = Depends()
 ):
     """Удаление товара (только для админа)"""
