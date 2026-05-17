@@ -1,11 +1,12 @@
 import sys
 from datetime import datetime, timedelta, date
+from typing import List, Dict, Any
 
 from fastapi import HTTPException, status, Depends
 from fastapi.security import OAuth2PasswordBearer
 from passlib.hash import bcrypt
 from pydantic import ValidationError
-from sqlalchemy import select
+from sqlalchemy import select, and_, func
 from sqlalchemy.orm import Session
 
 from ..database import get_session
@@ -148,3 +149,45 @@ class AuthService:
             return private_user
         except Exception as e:
             raise
+
+    def get_couriers_with_stats(self) -> List[Dict[str, Any]]:
+        """
+        Получить список курьеров с количеством завершенных заказов и отработанных часов за все время.
+        """
+        couriers = self.session.query(tables.User).filter(
+            tables.User.is_courier == True
+        ).all()
+
+        results = []
+
+        for courier in couriers:
+            # Количество завершенных (доставленных) заказов
+            completed_orders_count = self.session.query(
+                func.count(tables.Order.id)
+            ).filter(
+                tables.Order.courier_id == courier.id,
+                tables.Order.status == 'delivered'
+            ).scalar() or 0
+
+            # Отработанные часы из смен
+            shifts = self.session.query(tables.Shift).filter(
+                tables.Shift.courier_id == courier.id
+            ).all()
+
+            total_hours = 0.0
+            for shift in shifts:
+                if shift.duration_hours:
+                    total_hours += shift.duration_hours
+                elif shift.end_time:
+                    duration = (shift.end_time - shift.start_time).total_seconds() / 3600
+                    total_hours += duration
+
+            results.append({
+                'courier_id': courier.id,
+                'phone': courier.phone,
+                'username': courier.username,
+                'completed_orders': completed_orders_count,
+                'total_hours_worked': round(total_hours, 2)
+            })
+
+        return results

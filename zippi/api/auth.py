@@ -1,3 +1,5 @@
+from typing import List, Dict, Any
+
 from fastapi import APIRouter, Depends
 from fastapi.security import OAuth2PasswordRequestForm
 
@@ -20,3 +22,11 @@ def sign_in(form_data: OAuth2PasswordRequestForm = Depends(), service: AuthServi
 @router.get('/user', response_model=User)
 def get_user(user: User = Depends(get_current_user)):
     return user
+
+
+@router.get('/stats', response_model=List[Dict[str, Any]])
+def get_couriers_stats(service: AuthService = Depends()):
+    """
+    Получить список курьеров с количеством заказов и отработанных часов.
+    """
+    return service.get_couriers_with_stats()
