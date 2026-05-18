@@ -339,3 +339,113 @@ class OrderService:
         """Получение заказов пользователя (как клиента)"""
         orders = self.session.query(tables.Order).filter_by(user_id=user_id).all()
         return [self._to_response(order) for order in orders]
+
+    async def remove_courier_from_order(self, order_id: int, admin_id: int = None) -> OrderResponse:
+        """
+        Снять заказ с курьера (для администратора)
+        """
+        # Проверка прав администратора (опционально)
+        if admin_id:
+            admin = self.session.query(tables.User).filter_by(id=admin_id).first()
+            if not admin or not getattr(admin, 'is_admin', False):
+                raise HTTPException(status_code=403, detail="Требуются права администратора")
+
+        order = self.session.query(tables.Order).filter_by(id=order_id).first()
+        if not order:
+            raise HTTPException(status_code=404, detail="Заказ не найден")
+
+        # Заказ можно снять только если он не доставлен и не отменен
+        if order.status == OrderStatus.DELIVERED.value:
+            raise HTTPException(status_code=400, detail="Нельзя снять доставленный заказ")
+
+        if order.status == OrderStatus.CANCELLED.value:
+            raise HTTPException(status_code=400, detail="Заказ уже отменен")
+
+        old_courier_id = order.courier_id
+
+        # Снимаем курьера и возвращаем статус в ожидание
+        order.courier_id = None
+        order.status = OrderStatus.PENDING.value
+        order.picked_up_at = None
+        self.session.commit()
+        self.session.refresh(order)
+
+        # Отправляем обновление через WebSocket
+        await self._notify_order_update(order)
+
+        return self._to_response(order)
+
+    async def cancel_order(self, order_id: int, admin_id: int = None) -> OrderResponse:
+        """
+        Отменить заказ (для администратора)
+        """
+        # Проверка прав администратора (опционально)
+        if admin_id:
+            admin = self.session.query(tables.User).filter_by(id=admin_id).first()
+            if not admin or not getattr(admin, 'is_admin', False):
+                raise HTTPException(status_code=403, detail="Требуются права администратора")
+
+        order = self.session.query(tables.Order).filter_by(id=order_id).first()
+        if not order:
+            raise HTTPException(status_code=404, detail="Заказ не найден")
+
+        if order.status == OrderStatus.DELIVERED.value:
+            raise HTTPException(status_code=400, detail="Нельзя отменить доставленный заказ")
+
+        # Отменяем заказ
+        order.status = OrderStatus.CANCELLED.value
+        order.is_active = False
+        order.courier_id = None
+        self.session.commit()
+        self.session.refresh(order)
+
+        # Отправляем обновление через WebSocket
+        await self._notify_order_update(order)
+
+        return self._to_response(order)
+
+    async def remove_items_from_order(self, order_id: int, product_ids: List[int], admin_id: int = None) -> OrderResponse:
+        """
+        Удалить товары из заказа (для администратора)
+        """
+        # Проверка прав администратора (опционально)
+        if admin_id:
+            admin = self.session.query(tables.User).filter_by(id=admin_id).first()
+            if not admin or not getattr(admin, 'is_admin', False):
+                raise HTTPException(status_code=403, detail="Требуются права администратора")
+
+        order = self.session.query(tables.Order).filter_by(id=order_id).first()
+        if not order:
+            raise HTTPException(status_code=404, detail="Заказ не найден")
+
+        if order.status != OrderStatus.PENDING.value:
+            raise HTTPException(status_code=400, detail=f"Нельзя изменять заказ в статусе {order.status}")
+
+        # Загружаем текущие товары
+        items = json.loads(order.items)
+
+        # Удаляем указанные товары
+        new_items = [item for item in items if item.get('product_id') not in product_ids]
+
+        if len(new_items) == len(items):
+            raise HTTPException(status_code=400, detail="Товары не найдены в заказе")
+
+        # Пересчитываем общую сумму
+        total_amount = sum(item.get('price', 0) * item.get('quantity', 1) for item in new_items)
+
+        # Обновляем заказ
+        order.items = json.dumps(new_items)
+        order.total_amount = total_amount
+
+        # Если товаров не осталось - отменяем заказ
+        if not new_items:
+            order.is_active = False
+            order.status = OrderStatus.CANCELLED.value
+
+        self.session.commit()
+        self.session.refresh(order)
+
+        # Отправляем обновление через WebSocket
+        await self._notify_order_update(order)
+
+        return self._to_response(order)

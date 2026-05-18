@@ -131,3 +131,34 @@ def get_my_purchases(
 ):
     """Мои заказы как клиента"""
     return service.get_my_orders_as_customer(user.id)
+
+@router.post('/admin/remove-courier/{order_id}', response_model=OrderResponse)
+async def admin_remove_courier(
+    order_id: int,
+    user: User = Depends(get_current_user),
+    service: OrderService = Depends()
+):
+    """Снять заказ с курьера (только для администратора)"""
+    # Здесь добавьте проверку is_admin
+    return await service.remove_courier_from_order(order_id, user.id)
+
+
+@router.post('/admin/cancel-order/{order_id}', response_model=OrderResponse)
+async def admin_cancel_order(
+    order_id: int,
+    user: User = Depends(get_current_user),
+    service: OrderService = Depends()
+):
+    """Отменить заказ (только для администратора)"""
+    return await service.cancel_order(order_id, user.id)
+
+
+@router.post('/admin/remove-items/{order_id}', response_model=OrderResponse)
+async def admin_remove_items(
+    order_id: int,
+    product_ids: List[int],
+    user: User = Depends(get_current_user),
+    service: OrderService = Depends()
+):
+    """Удалить товары из заказа (только для администратора)"""
+    return await service.remove_items_from_order(order_id, product_ids, user.id)
