@@ -118,7 +118,7 @@ def get_courier_history(
 def get_orders(
     service: OrderService = Depends()
 ):
-    """Все заказы курьера"""
+    """Все заказы"""
     return service.get_orders()
 
 
