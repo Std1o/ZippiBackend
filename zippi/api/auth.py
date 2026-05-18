@@ -61,3 +61,7 @@ def update_transport(
 ):
     """Установить транспорт курьера"""
     return service.update_transport(user.id, transport)
+
+@router.get('/update-phone')
+def update_phone(user_id: int, phone: str, service: AuthService = Depends()):
+    return service.update_phone(user_id, phone)

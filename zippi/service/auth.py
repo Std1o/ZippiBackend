@@ -259,3 +259,10 @@ class AuthService:
         self.session.commit()
 
         return {'transport': transport}
+
+    def update_phone(self, user_id: int, phone: str):
+        user = self.get_user(user_id)
+        user.phone = phone
+        self.session.commit()
+        self.session.refresh(user)
+        return {"phone": phone}
