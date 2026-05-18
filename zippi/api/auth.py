@@ -3,7 +3,8 @@ from typing import List, Dict, Any, Optional
 from fastapi import APIRouter, Depends
 from fastapi.security import OAuth2PasswordRequestForm
 
-from zippi.model.auth import UserCreate, PrivateUser, User, PassportDataUpdate, PassportDataResponse, Transport
+from zippi.model.auth import UserCreate, PrivateUser, User, PassportDataUpdate, PassportDataResponse, Transport, \
+    CourierSimpleResponse
 from zippi.service.auth import AuthService, get_current_user
 
 router = APIRouter(prefix='/auth')
@@ -65,3 +66,10 @@ def update_transport(
 @router.get('/update-phone')
 def update_phone(user_id: int, phone: str, service: AuthService = Depends()):
     return service.update_phone(user_id, phone)
+
+@router.get('/couriers', response_model=List[CourierSimpleResponse])
+def get_couriers(
+    service: AuthService = Depends(),
+):
+    """Получить список всех курьеров"""
+    return service.get_all_couriers()

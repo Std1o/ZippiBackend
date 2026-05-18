@@ -48,3 +48,7 @@ class PassportDataResponse(BaseModel):
     passport_issued_by: str
     passport_issued_date: date
     passport_department_code: Optional[str] = None
+
+class CourierSimpleResponse(BaseModel):
+    username: Optional[str] = None
+    phone: str

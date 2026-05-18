@@ -10,7 +10,8 @@ from sqlalchemy import select, and_, func
 from sqlalchemy.orm import Session
 
 from ..database import get_session
-from ..model.auth import User, UserCreate, PrivateUser, PassportDataResponse, PassportDataUpdate, Transport
+from ..model.auth import User, UserCreate, PrivateUser, PassportDataResponse, PassportDataUpdate, Transport, \
+    CourierSimpleResponse
 from ..settings import settings
 from jose import jwt, JWTError
 from .. import tables
@@ -266,3 +267,17 @@ class AuthService:
         self.session.commit()
         self.session.refresh(user)
         return {"phone": phone}
+
+    def get_all_couriers(self) -> List[CourierSimpleResponse]:
+        """Получение списка всех курьеров (имя и телефон)"""
+        couriers = self.session.query(tables.User).filter(
+            tables.User.is_courier == True
+        ).all()
+
+        return [
+            CourierSimpleResponse(
+                username=courier.username,
+                phone=courier.phone
+            )
+            for courier in couriers
+        ]
