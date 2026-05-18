@@ -166,7 +166,10 @@ class CartService:
             "customer_phone": checkout_data.customer_phone,
             "customer_address": checkout_data.customer_address,
             "items": order_items,
-            "total_amount": total_amount
+            "total_amount": total_amount,
+            "entrance": checkout_data.entrance,
+            "floor": checkout_data.floor,
+            "flat": checkout_data.flat
         }
 
         order = order_service.create_order(user_id, order_data)

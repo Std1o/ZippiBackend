@@ -39,3 +39,6 @@ class CheckoutRequest(BaseModel):
     customer_name: str
     customer_phone: str
     customer_address: str
+    entrance: str
+    floor: str
+    flat: str
