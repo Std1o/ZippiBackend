@@ -52,7 +52,10 @@ class OrderService:
             customer_name=order_data['customer_name'],
             items=json.dumps(order_data['items']),
             total_amount=order_data['total_amount'],
-            status=OrderStatus.PENDING.value
+            status=OrderStatus.PENDING.value,
+            entrance=order_data['entrance'],
+            floor=order_data['floor'],
+            flat=order_data['flat']
         )
 
         self.session.add(order)
