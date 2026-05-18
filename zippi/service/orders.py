@@ -92,7 +92,10 @@ class OrderService:
             delivered_at=order.delivered_at,
             courier_id=order.courier_id,
             courier_name=courier_name,
-            courier_phone=courier_phone
+            courier_phone=courier_phone,
+            entrance=order.entrance,
+            floor=order.floor,
+            flat=order.flat
         )
 
     # ========== Смены ==========

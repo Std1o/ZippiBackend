@@ -39,6 +39,9 @@ class OrderResponse(BaseModel):
     courier_id: Optional[int]
     courier_name: Optional[str] = None
     courier_phone: Optional[str] = None
+    entrance: str
+    floor: str
+    flat: str
 
     model_config = ConfigDict(from_attributes=True)
 
