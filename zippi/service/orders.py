@@ -356,17 +356,12 @@ class OrderService:
         orders = self.session.query(tables.Order).filter_by(user_id=user_id).all()
         return [self._to_response(order) for order in orders]
 
-    async def remove_courier_from_order(self, order_id: int, admin_id: int = None) -> OrderResponse:
+    async def remove_courier_from_order(self, order_number: str) -> OrderResponse:
         """
         Снять заказ с курьера (для администратора)
         """
-        # Проверка прав администратора (опционально)
-        if admin_id:
-            admin = self.session.query(tables.User).filter_by(id=admin_id).first()
-            if not admin or not getattr(admin, 'is_admin', False):
-                raise HTTPException(status_code=403, detail="Требуются права администратора")
 
-        order = self.session.query(tables.Order).filter_by(id=order_id).first()
+        order = self.session.query(tables.Order).filter_by(order_number=order_number).first()
         if not order:
             raise HTTPException(status_code=404, detail="Заказ не найден")
 

@@ -141,13 +141,12 @@ def get_my_purchases(
 
 @router.post('/admin/remove-courier/{order_id}', response_model=OrderResponse)
 async def admin_remove_courier(
-    order_id: int,
-    user: User = Depends(get_current_user),
+    order_number: str,
     service: OrderService = Depends()
 ):
     """Снять заказ с курьера (только для администратора)"""
     # Здесь добавьте проверку is_admin
-    return await service.remove_courier_from_order(order_id, user.id)
+    return await service.remove_courier_from_order(order_number)
 
 
 @router.post('/admin/cancel-order/{order_id}', response_model=OrderResponse)
