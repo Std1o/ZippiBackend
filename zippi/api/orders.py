@@ -149,22 +149,20 @@ async def admin_remove_courier(
     return await service.remove_courier_from_order(order_number)
 
 
-@router.post('/admin/cancel-order/{order_id}', response_model=OrderResponse)
+@router.post('/admin/cancel-order/{order_number}', response_model=OrderResponse)
 async def admin_cancel_order(
-    order_id: int,
-    user: User = Depends(get_current_user),
+    order_number: str,
     service: OrderService = Depends()
 ):
     """Отменить заказ (только для администратора)"""
-    return await service.cancel_order(order_id, user.id)
+    return await service.cancel_order(order_number)
 
 
-@router.post('/admin/remove-items/{order_id}', response_model=OrderResponse)
+@router.post('/admin/remove-items/{order_number}', response_model=OrderResponse)
 async def admin_remove_items(
-    order_id: int,
-    product_ids: List[int],
-    user: User = Depends(get_current_user),
+    order_number: str,
+    product_id: int,
     service: OrderService = Depends()
 ):
     """Удалить товары из заказа (только для администратора)"""
-    return await service.remove_items_from_order(order_id, product_ids, user.id)
+    return await service.remove_item_from_order(order_number, product_id)

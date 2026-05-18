@@ -386,17 +386,12 @@ class OrderService:
 
         return self._to_response(order)
 
-    async def cancel_order(self, order_id: int, admin_id: int = None) -> OrderResponse:
+    async def cancel_order(self, order_number: str) -> OrderResponse:
         """
         Отменить заказ (для администратора)
         """
-        # Проверка прав администратора (опционально)
-        if admin_id:
-            admin = self.session.query(tables.User).filter_by(id=admin_id).first()
-            if not admin or not getattr(admin, 'is_admin', False):
-                raise HTTPException(status_code=403, detail="Требуются права администратора")
 
-        order = self.session.query(tables.Order).filter_by(id=order_id).first()
+        order = self.session.query(tables.Order).filter_by(order_number=order_number).first()
         if not order:
             raise HTTPException(status_code=404, detail="Заказ не найден")
 
@@ -415,17 +410,13 @@ class OrderService:
 
         return self._to_response(order)
 
-    async def remove_items_from_order(self, order_id: int, product_ids: List[int], admin_id: int = None) -> OrderResponse:
+    async def remove_item_from_order(self, order_number: str, product_id: int) -> OrderResponse:
         """
-        Удалить товары из заказа (для администратора)
+        Удалить товар из заказа (для администратора)
         """
         # Проверка прав администратора (опционально)
-        if admin_id:
-            admin = self.session.query(tables.User).filter_by(id=admin_id).first()
-            if not admin or not getattr(admin, 'is_admin', False):
-                raise HTTPException(status_code=403, detail="Требуются права администратора")
 
-        order = self.session.query(tables.Order).filter_by(id=order_id).first()
+        order = self.session.query(tables.Order).filter_by(order_number=order_number).first()
         if not order:
             raise HTTPException(status_code=404, detail="Заказ не найден")
 
@@ -435,11 +426,18 @@ class OrderService:
         # Загружаем текущие товары
         items = json.loads(order.items)
 
-        # Удаляем указанные товары
-        new_items = [item for item in items if item.get('product_id') not in product_ids]
+        # Ищем товар для удаления
+        item_to_remove = None
+        for item in items:
+            if item.get('product_id') == product_id:
+                item_to_remove = item
+                break
 
-        if len(new_items) == len(items):
-            raise HTTPException(status_code=400, detail="Товары не найдены в заказе")
+        if not item_to_remove:
+            raise HTTPException(status_code=404, detail="Товар не найден в заказе")
+
+        # Удаляем товар
+        new_items = [item for item in items if item.get('product_id') != product_id]
 
         # Пересчитываем общую сумму
         total_amount = sum(item.get('price', 0) * item.get('quantity', 1) for item in new_items)
