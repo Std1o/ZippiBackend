@@ -1,3 +1,5 @@
+from enum import Enum
+
 from pydantic import BaseModel, ConfigDict
 
 
@@ -22,3 +24,9 @@ class PrivateUser(User):
     token_type: str = 'bearer'
 
     model_config = ConfigDict(from_attributes=True)
+
+class Transport(str, Enum):
+    CAR = "car"
+    ELECTRIC_BIKE = "electric_bike"
+    BIKE = "bike"
+    WALKING = "walking"

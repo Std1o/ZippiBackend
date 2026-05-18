@@ -2,9 +2,11 @@ from datetime import datetime
 import json
 
 import sqlalchemy as sa
-from sqlalchemy import ForeignKey, Text, Boolean, Integer, String
+from sqlalchemy import ForeignKey, Text, Boolean, Integer, String, Enum
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
+
+from zippi.model.auth import Transport
 
 Base = declarative_base()
 
@@ -17,6 +19,14 @@ class User(Base):
     password_hash = sa.Column(sa.Text)
     is_courier = sa.Column(sa.Boolean, default=False)
     created_at = sa.Column(sa.DateTime, default=datetime.utcnow)
+    transport = sa.Column(Enum(Transport), default=Transport.WALKING)
+    # Паспортные данные
+    full_name = sa.Column(sa.String(200), nullable=True)  # Полное имя
+    passport_series = sa.Column(sa.String(4), nullable=True)  # Серия паспорта
+    passport_number = sa.Column(sa.String(6), nullable=True)  # Номер паспорта
+    passport_issued_by = sa.Column(sa.String(500), nullable=True)  # Кем выдан
+    passport_issued_date = sa.Column(sa.Date, nullable=True)  # Дата выдачи
+    passport_department_code = sa.Column(sa.String(7), nullable=True)  # Код подразделения
 
 
 class Category(Base):
@@ -98,6 +108,9 @@ class Order(Base):
 
     user = relationship("User", foreign_keys=[user_id], backref="orders_as_customer")
     courier = relationship("User", foreign_keys=[courier_id], backref="orders_as_courier")
+    entrance = sa.Column(sa.Text, default="")
+    floor = sa.Column(sa.Text, default="")
+    flat = sa.Column(sa.Text, default="")
 
 
 class Shift(Base):
