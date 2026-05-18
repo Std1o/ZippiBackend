@@ -10,7 +10,7 @@ from sqlalchemy import select, and_, func
 from sqlalchemy.orm import Session
 
 from ..database import get_session
-from ..model.auth import User, UserCreate, PrivateUser, PassportDataResponse, PassportDataUpdate
+from ..model.auth import User, UserCreate, PrivateUser, PassportDataResponse, PassportDataUpdate, Transport
 from ..settings import settings
 from jose import jwt, JWTError
 from .. import tables
@@ -142,7 +142,8 @@ class AuthService:
             'username': user.username,
             'id': user.id,
             'access_token': token,
-            'token_type': 'bearer'
+            'token_type': 'bearer',
+            'transport': user.transport
         }
         try:
             private_user = PrivateUser(**user_dict)
@@ -242,3 +243,17 @@ class AuthService:
             passport_issued_date=user.passport_issued_date,
             passport_department_code=user.passport_department_code,
         )
+
+    def update_transport(self, user_id: int, transport: Transport):
+        """Обновление транспорта курьера"""
+        user = self.session.query(tables.User).filter_by(id=user_id).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+
+        if not user.is_courier:
+            raise HTTPException(status_code=403, detail="Only couriers can set transport")
+
+        user.transport = transport.value
+        self.session.commit()
+
+        return {'message': 'success'}
