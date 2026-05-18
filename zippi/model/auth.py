@@ -1,4 +1,6 @@
+from datetime import date
 from enum import Enum
+from typing import Optional
 
 from pydantic import BaseModel, ConfigDict
 
@@ -30,3 +32,19 @@ class Transport(str, Enum):
     ELECTRIC_BIKE = "electric_bike"
     BIKE = "bike"
     WALKING = "walking"
+
+class PassportDataUpdate(BaseModel):
+    full_name: str
+    passport_series: str
+    passport_number: str
+    passport_issued_by: str
+    passport_issued_date: date
+    passport_department_code: Optional[str] = None
+
+class PassportDataResponse(BaseModel):
+    full_name: str
+    passport_series: str
+    passport_number: str
+    passport_issued_by: str
+    passport_issued_date: date
+    passport_department_code: Optional[str] = None

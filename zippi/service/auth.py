@@ -1,6 +1,6 @@
 import sys
 from datetime import datetime, timedelta, date
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 
 from fastapi import HTTPException, status, Depends
 from fastapi.security import OAuth2PasswordBearer
@@ -10,7 +10,7 @@ from sqlalchemy import select, and_, func
 from sqlalchemy.orm import Session
 
 from ..database import get_session
-from ..model.auth import User, UserCreate, PrivateUser
+from ..model.auth import User, UserCreate, PrivateUser, PassportDataResponse, PassportDataUpdate
 from ..settings import settings
 from jose import jwt, JWTError
 from .. import tables
@@ -198,3 +198,47 @@ class AuthService:
         self.session.commit()
         self.session.refresh(user)
         return {"success": True}
+
+    def save_passport_data(self, user_id: int, passport_data: PassportDataUpdate) -> PassportDataResponse:
+        """Сохранение паспортных данных пользователя"""
+        user = self.session.query(tables.User).filter_by(id=user_id).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+
+        # Сохраняем данные
+        user.full_name = passport_data.full_name
+        user.passport_series = passport_data.passport_series
+        user.passport_number = passport_data.passport_number
+        user.passport_issued_by = passport_data.passport_issued_by
+        user.passport_issued_date = passport_data.passport_issued_date
+        user.passport_department_code = passport_data.passport_department_code
+
+        self.session.commit()
+        self.session.refresh(user)
+
+        return PassportDataResponse(
+            full_name=user.full_name,
+            passport_series=user.passport_series,
+            passport_number=user.passport_number,
+            passport_issued_by=user.passport_issued_by,
+            passport_issued_date=user.passport_issued_date,
+            passport_department_code=user.passport_department_code,
+        )
+
+    def get_passport_data(self, user_id: int) -> Optional[PassportDataResponse]:
+        """Получение паспортных данных пользователя"""
+        user = self.session.query(tables.User).filter_by(id=user_id).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+
+        if not user.full_name:
+            return None
+
+        return PassportDataResponse(
+            full_name=user.full_name,
+            passport_series=user.passport_series,
+            passport_number=user.passport_number,
+            passport_issued_by=user.passport_issued_by,
+            passport_issued_date=user.passport_issued_date,
+            passport_department_code=user.passport_department_code,
+        )
