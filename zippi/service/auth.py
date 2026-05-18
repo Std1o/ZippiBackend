@@ -111,7 +111,9 @@ class AuthService:
         user = tables.User(
             phone=user_data.phone,
             username=user_data.username,
-            password_hash=self.hash_password(user_data.password))
+            password_hash=self.hash_password(user_data.password),
+            is_courier=user_data.is_courier
+        )
         self.session.add(user)
         self.session.commit()
         token = self.create_token(user)
