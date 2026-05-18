@@ -158,7 +158,7 @@ async def admin_cancel_order(
     return await service.cancel_order(order_number)
 
 
-@router.post('/admin/remove-items/{order_number}', response_model=OrderResponse)
+@router.post('/admin/remove-item/{order_number}', response_model=OrderResponse)
 async def admin_remove_item(
     order_number: str,
     product_id: int,
