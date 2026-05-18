@@ -256,4 +256,4 @@ class AuthService:
         user.transport = transport.value
         self.session.commit()
 
-        return {'message': 'success'}
+        return {'transport': transport}
