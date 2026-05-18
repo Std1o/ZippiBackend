@@ -323,6 +323,11 @@ class OrderService:
 
         return result
 
+    def get_orders(self) -> List[OrderResponse]:
+        """Получение всех заказов курьера"""
+        orders = self.session.query(tables.Order).all()
+        return [self._to_response(order) for order in orders]
+
     def get_my_orders(self, courier_id: int) -> List[OrderResponse]:
         """Получение всех заказов курьера"""
         orders = self.session.query(tables.Order).filter_by(courier_id=courier_id).all()

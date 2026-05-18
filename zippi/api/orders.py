@@ -114,6 +114,13 @@ def get_courier_history(
     """История доставок курьера"""
     return service.get_order_history(user_id)
 
+@router.get('/orders', response_model=List[OrderResponse])
+def get_orders(
+    service: OrderService = Depends()
+):
+    """Все заказы курьера"""
+    return service.get_orders()
+
 
 @router.get('/my-orders', response_model=List[OrderResponse])
 def get_my_orders(
