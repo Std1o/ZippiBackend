@@ -437,7 +437,7 @@ class OrderService:
             raise HTTPException(status_code=404, detail="Товар не найден в заказе")
 
         # Удаляем товар
-        new_items = [item for item in items if item.get('product_id') != product_id]
+        new_items = [item for item in items if item.get('id') != product_id]
 
         # Пересчитываем общую сумму
         total_amount = sum(item.get('price', 0) * item.get('quantity', 1) for item in new_items)
