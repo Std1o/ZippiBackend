@@ -65,6 +65,15 @@ class OrderService:
         """Преобразование модели БД в ответ API"""
         items = json.loads(order.items) if order.items else []
 
+        # Получаем данные курьера, если он назначен
+        courier_name = None
+        courier_phone = None
+        if order.courier_id:
+            courier = self.session.query(tables.User).filter_by(id=order.courier_id).first()
+            if courier:
+                courier_name = courier.username
+                courier_phone = courier.phone
+
         return OrderResponse(
             id=order.id,
             order_number=order.order_number,
@@ -81,7 +90,9 @@ class OrderService:
             created_at=order.created_at,
             picked_up_at=order.picked_up_at,
             delivered_at=order.delivered_at,
-            courier_id=order.courier_id
+            courier_id=order.courier_id,
+            courier_name=courier_name,
+            courier_phone=courier_phone
         )
 
     # ========== Смены ==========

@@ -37,6 +37,8 @@ class OrderResponse(BaseModel):
     picked_up_at: Optional[datetime]
     delivered_at: Optional[datetime]
     courier_id: Optional[int]
+    courier_name: Optional[str] = None
+    courier_phone: Optional[str] = None
 
     model_config = ConfigDict(from_attributes=True)
 
