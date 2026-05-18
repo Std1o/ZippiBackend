@@ -139,7 +139,7 @@ def get_my_purchases(
     """Мои заказы как клиента"""
     return service.get_my_orders_as_customer(user.id)
 
-@router.post('/admin/remove-courier/{order_id}', response_model=OrderResponse)
+@router.post('/admin/remove-courier/{order_number}', response_model=OrderResponse)
 async def admin_remove_courier(
     order_number: str,
     service: OrderService = Depends()
