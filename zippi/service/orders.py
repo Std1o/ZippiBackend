@@ -429,7 +429,7 @@ class OrderService:
         # Ищем товар для удаления
         item_to_remove = None
         for item in items:
-            if item.get('product_id') == product_id:
+            if item.get('id') == product_id:
                 item_to_remove = item
                 break
 
