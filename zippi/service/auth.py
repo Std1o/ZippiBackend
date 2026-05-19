@@ -157,7 +157,8 @@ class AuthService:
 
     def get_couriers_with_stats(self) -> List[Dict[str, Any]]:
         """
-        Получить список курьеров с количеством завершенных заказов и отработанных часов за все время.
+        Получить список курьеров с количеством завершенных заказов и отработанных часов
+        (отработанные часы = сумма времени от pickup до delivery по каждому заказу)
         """
         couriers = self.session.query(tables.User).filter(
             tables.User.is_courier == True
@@ -166,31 +167,26 @@ class AuthService:
         results = []
 
         for courier in couriers:
-            # Количество завершенных (доставленных) заказов
-            completed_orders_count = self.session.query(
-                func.count(tables.Order.id)
-            ).filter(
+            # Завершенные заказы курьера
+            completed_orders = self.session.query(tables.Order).filter(
                 tables.Order.courier_id == courier.id,
                 tables.Order.status == 'delivered'
-            ).scalar() or 0
-
-            # Отработанные часы из смен
-            shifts = self.session.query(tables.Shift).filter(
-                tables.Shift.courier_id == courier.id
             ).all()
 
+            completed_orders_count = len(completed_orders)
+
+            # Отработанные часы = сумма времени от pickup до delivery
             total_hours = 0.0
-            for shift in shifts:
-                if shift.duration_hours:
-                    total_hours += shift.duration_hours
-                elif shift.end_time:
-                    duration = (shift.end_time - shift.start_time).total_seconds() / 3600
+            for order in completed_orders:
+                if order.picked_up_at and order.delivered_at:
+                    duration = (order.delivered_at - order.picked_up_at).total_seconds() / 3600
                     total_hours += duration
 
             results.append({
                 'courier_id': courier.id,
                 'phone': courier.phone,
                 'username': courier.username,
+                'transport': courier.transport.value if courier.transport else 'walking',
                 'completed_orders': completed_orders_count,
                 'total_hours_worked': round(total_hours, 2)
             })
