@@ -32,15 +32,17 @@ def get_couriers_stats(service: AuthService = Depends()):
     """
     return service.get_couriers_with_stats()
 
+
 @router.get('/set_courier')
 def set_courier(user: User = Depends(get_current_user), service: AuthService = Depends()):
     return service.set_courier(user.id)
 
+
 @router.post('/passport', response_model=PassportDataResponse)
 def save_passport_data(
-    passport_data: PassportDataUpdate,
-    user: User = Depends(get_current_user),
-    service: AuthService = Depends()
+        passport_data: PassportDataUpdate,
+        user: User = Depends(get_current_user),
+        service: AuthService = Depends()
 ):
     """Сохранение паспортных данных текущего пользователя"""
     return service.save_passport_data(user.id, passport_data)
@@ -48,28 +50,59 @@ def save_passport_data(
 
 @router.get('/passport', response_model=Optional[PassportDataResponse])
 def get_passport_data(
-    user: User = Depends(get_current_user),
-    service: AuthService = Depends()
+        user: User = Depends(get_current_user),
+        service: AuthService = Depends()
 ):
     """Получение паспортных данных текущего пользователя"""
     return service.get_passport_data(user.id)
 
+
+@router.post('/passport-admin', response_model=PassportDataResponse)
+def save_passport_data_admin(
+        passport_data: PassportDataUpdate,
+        user_id: int,
+        service: AuthService = Depends()
+):
+    """Сохранение паспортных данных текущего пользователя"""
+    return service.save_passport_data(user_id, passport_data)
+
+
+@router.get('/passport-admin', response_model=Optional[PassportDataResponse])
+def get_passport_data_admin(
+        user_id: int,
+        service: AuthService = Depends()
+):
+    """Получение паспортных данных текущего пользователя"""
+    return service.get_passport_data(user_id)
+
+
 @router.post('/transport')
 def update_transport(
-    transport: Transport,
-    user: User = Depends(get_current_user),
-    service: AuthService = Depends()
+        transport: Transport,
+        user: User = Depends(get_current_user),
+        service: AuthService = Depends()
 ):
     """Установить транспорт курьера"""
     return service.update_transport(user.id, transport)
+
+@router.post('/transport-admin')
+def update_transport(
+        transport: Transport,
+        user_id: int,
+        service: AuthService = Depends()
+):
+    """Установить транспорт курьера"""
+    return service.update_transport(user_id, transport)
+
 
 @router.get('/update-phone')
 def update_phone(user_id: int, phone: str, service: AuthService = Depends()):
     return service.update_phone(user_id, phone)
 
+
 @router.get('/couriers', response_model=List[CourierSimpleResponse])
 def get_couriers(
-    service: AuthService = Depends(),
+        service: AuthService = Depends(),
 ):
     """Получить список всех курьеров"""
     return service.get_all_couriers()
