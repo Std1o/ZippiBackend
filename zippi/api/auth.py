@@ -95,7 +95,7 @@ def update_transport(
     return service.update_transport(user_id, transport)
 
 
-@router.get('/update-phone')
+@router.put('/update-phone')
 def update_phone(user_id: int, phone: str, service: AuthService = Depends()):
     return service.update_phone(user_id, phone)
 
