@@ -12,35 +12,6 @@ from ..service.orders import OrderService
 router = APIRouter(prefix='/orders', tags=['Заказы'])
 
 
-# ========== Смены ==========
-@router.post('/shift/start', response_model=ShiftResponse)
-def start_shift(
-    shift_data: ShiftCreate,
-    user: User = Depends(get_current_user),
-    service: OrderService = Depends()
-):
-    """Начало смены курьера"""
-    return service.start_shift(user.id, shift_data)
-
-
-@router.post('/shift/end', response_model=ShiftResponse)
-def end_shift(
-    user: User = Depends(get_current_user),
-    service: OrderService = Depends()
-):
-    """Завершение смены курьера"""
-    return service.end_shift(user.id)
-
-
-@router.get('/shift/current', response_model=Optional[ShiftResponse])
-def get_current_shift(
-    user: User = Depends(get_current_user),
-    service: OrderService = Depends()
-):
-    """Информация о текущей смене"""
-    return service.get_current_shift(user.id)
-
-
 # ========== Заказы ==========
 @router.get('/available', response_model=List[OrderCard])
 def get_available_orders(

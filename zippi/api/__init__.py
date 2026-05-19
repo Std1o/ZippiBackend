@@ -5,6 +5,7 @@ from .catalog import router as catalog_router
 from .cart import router as cart_router
 from .websocket import router as websocket_router
 from .images import router as images_router
+from .schedule import router as schedule_router
 
 router = APIRouter()
 router.include_router(auth_router)
@@ -13,3 +14,4 @@ router.include_router(catalog_router)
 router.include_router(cart_router)
 router.include_router(websocket_router)
 router.include_router(images_router)
+router.include_router(schedule_router)

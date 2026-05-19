@@ -113,16 +113,14 @@ class Order(Base):
     flat = sa.Column(sa.Text, default="")
 
 
-class Shift(Base):
-    __tablename__ = 'shifts'
+class TimeSlot(Base):
+    __tablename__ = 'time_slots'
     id = sa.Column(sa.Integer, primary_key=True)
     courier_id = sa.Column(sa.Integer, ForeignKey('users.id'), nullable=False)
     start_time = sa.Column(sa.DateTime, nullable=False)
-    end_time = sa.Column(sa.DateTime)
-    duration_hours = sa.Column(sa.Integer)
-    is_active = sa.Column(sa.Boolean, default=True)
+    end_time = sa.Column(sa.DateTime, nullable=False)
 
-    courier = relationship("User", foreign_keys=[courier_id], backref="shifts")
+    courier = relationship("User", foreign_keys=[courier_id], backref="time_slots")
 
 
 class DeliveryHistory(Base):
