@@ -146,7 +146,8 @@ class AuthService:
             'id': user.id,
             'access_token': token,
             'token_type': 'bearer',
-            'transport': user.transport
+            'transport': user.transport,
+            'is_courier': user.is_courier
         }
         try:
             private_user = PrivateUser(**user_dict)
