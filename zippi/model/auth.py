@@ -53,3 +53,4 @@ class CourierSimpleResponse(BaseModel):
     id: int
     username: Optional[str] = None
     phone: str
+    transport: Transport

@@ -270,7 +270,7 @@ class AuthService:
 
     def get_all_couriers(self) -> List[CourierSimpleResponse]:
         """Получение списка всех курьеров (имя и телефон)"""
-        couriers = self.session.query(tables.User).filter(
+        couriers: List[tables.User] = self.session.query(tables.User).filter(
             tables.User.is_courier == True
         ).all()
 
@@ -278,7 +278,8 @@ class AuthService:
             CourierSimpleResponse(
                 id=courier.id,
                 username=courier.username,
-                phone=courier.phone
+                phone=courier.phone,
+                transport=courier.transport
             )
             for courier in couriers
         ]
