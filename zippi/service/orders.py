@@ -127,9 +127,6 @@ class OrderService:
 
     async def take_order(self, order_id: int, courier_id: int) -> OrderResponse:
         """Взять заказ в работу"""
-        if not self.is_shift_active(courier_id):
-            raise HTTPException(status_code=403, detail="У вас нет активной смены. Начните смену чтобы взять заказ")
-
         order = self.session.query(tables.Order).filter_by(id=order_id).first()
         if not order:
             raise HTTPException(status_code=404, detail="Заказ не найден")
