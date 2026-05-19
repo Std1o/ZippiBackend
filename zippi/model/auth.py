@@ -50,5 +50,6 @@ class PassportDataResponse(BaseModel):
     passport_department_code: Optional[str] = None
 
 class CourierSimpleResponse(BaseModel):
+    id: int
     username: Optional[str] = None
     phone: str

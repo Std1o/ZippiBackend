@@ -276,6 +276,7 @@ class AuthService:
 
         return [
             CourierSimpleResponse(
+                id=courier.id,
                 username=courier.username,
                 phone=courier.phone
             )
