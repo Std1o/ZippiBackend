@@ -104,9 +104,6 @@ class OrderService:
     # ========== Заказы ==========
     def get_available_orders(self, courier_id: Optional[int] = None) -> List[OrderCard]:
         """Получение списка доступных заказов для курьеров"""
-        if courier_id and not self.is_shift_active(courier_id):
-            raise HTTPException(status_code=403, detail="У вас нет активной смены. Начните смену чтобы видеть заказы")
-
         orders = self.session.query(tables.Order).filter(
             tables.Order.status == OrderStatus.PENDING.value,
             tables.Order.is_active == True,
@@ -151,9 +148,6 @@ class OrderService:
 
     async def confirm_pickup(self, order_number: str, pickup_code: str, courier_id: int) -> OrderResponse:
         """Подтверждение получения заказа в магазине по коду"""
-        if not self.is_shift_active(courier_id):
-            raise HTTPException(status_code=403, detail="У вас нет активной смены")
-
         order = self.session.query(tables.Order).filter_by(order_number=order_number).first()
         if not order:
             raise HTTPException(status_code=404, detail="Заказ не найден")
@@ -179,9 +173,6 @@ class OrderService:
 
     async def confirm_delivery(self, order_number: str, delivery_code: str, courier_id: int) -> OrderResponse:
         """Подтверждение доставки заказа по коду клиента"""
-        if not self.is_shift_active(courier_id):
-            raise HTTPException(status_code=403, detail="У вас нет активной смены")
-
         order = self.session.query(tables.Order).filter_by(order_number=order_number).first()
         if not order:
             raise HTTPException(status_code=404, detail="Заказ не найден")
