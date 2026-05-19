@@ -15,6 +15,7 @@ class UserCreate(BaseUser):
 
 class User(BaseUser):
     id: int
+    is_courier: bool
     model_config = ConfigDict(from_attributes=True)
 
 class Token(BaseModel):
